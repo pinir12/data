@@ -26,10 +26,17 @@ export default async function handler(req, res) {
 
   const outputFile = path.join(downloadDir, `${videoId}.${format}`);
 
+    const qualityMap = {
+    high: 'bestvideo+bestaudio/best',
+    medium: 'bestvideo[height<=720]+bestaudio/best[height<=720]',
+    low: 'bestvideo[height<=480]+bestaudio/best[height<=480]',
+  };
+  const ytQuality = qualityMap[quality] || qualityMap.medium;
+
   try {
     // ✅ Run yt-dlp
     const cookies_path = "/home/ubuntu/cookies.txt";
-    const ytDlpCmd = `yt-dlp -f "${quality}" --cookies "${cookies_path}" -o "${outputFile}" "https://www.youtube.com/watch?v=${videoId}"`;
+    const ytDlpCmd = `yt-dlp -f  "${ytQuality}" --cookies "${cookies_path}" -o "${outputFile}" "https://www.youtube.com/watch?v=${videoId}"`;
     console.log(`Running: ${ytDlpCmd}`);
 
     await execPromise(ytDlpCmd);
