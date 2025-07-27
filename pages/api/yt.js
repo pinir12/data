@@ -47,7 +47,7 @@ const { stdout, stderr } = await execPromise(ytDlpCmd);
 console.log('yt-dlp stdout:', stdout);
 console.log('yt-dlp stderr:', stderr);
 
-const outputFile = stdout.trim(); // This is the actual downloaded file path
+const outputFile = stdout.split('\n').map(s => s.trim()).filter(Boolean).pop();
 
 if (!fs.existsSync(outputFile)) {
   return res.status(500).json({ error: 'Downloaded file not found after yt-dlp run' });
@@ -55,7 +55,7 @@ if (!fs.existsSync(outputFile)) {
 
 const actualFilename = path.basename(outputFile);
 
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(actualFilename)}.${format}"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(actualFilename)}"`);
     res.setHeader('Content-Type', `video/${format}`);
 
     const fileStream = fs.createReadStream(outputFile);
