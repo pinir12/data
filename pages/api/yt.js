@@ -48,18 +48,18 @@ export default async function handler(req, res) {
     console.log('yt-dlp stdout:', stdout);
     console.log('yt-dlp stderr:', stderr);
 
-    if (!fs.existsSync(outputFile)) {
+    if (!fs.existsSync(outputTemplate)) {
       return res.status(500).json({ error: 'Downloaded file not found after yt-dlp run' });
     }
 
     res.setHeader('Content-Disposition', `attachment; filename="${videoId}.${format}"`);
     res.setHeader('Content-Type', `video/${format}`);
 
-    const fileStream = fs.createReadStream(outputFile);
+    const fileStream = fs.createReadStream(outputTemplate);
     fileStream.pipe(res);
 
     fileStream.on('end', () => {
-      fs.unlink(outputFile, () => { }); // Cleanup temp file
+      fs.unlink(outputTemplate, () => { }); // Cleanup temp file
     });
 
     fileStream.on('error', (err) => {
