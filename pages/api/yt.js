@@ -3,7 +3,7 @@ import { promisify } from 'util';
 import fs from 'fs';
 import path from 'path';
 import { getServerSession } from 'next-auth/next'; // For NextAuth v4
-import { authOptions } from './auth/[...nextauth]'; // Adjust path as per your setup
+
 
 const execPromise = promisify(exec);
 
@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   const { videoId, quality = 'medium', format = 'mp4' } = req.query;
 
   // ✅ Check auth session
-  const session = await getServerSession(req, res, authOptions);
+  const session = await getServerSession(req, res);
   if (!session) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
