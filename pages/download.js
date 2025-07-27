@@ -15,7 +15,7 @@ export default function Page() {
     const [id, setId] = useState("");
     const [buttonLoading, setButtonLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
-    const [data, setData] = useState(null);
+    const [data, setData] = useState('');
     const [urlToOpen, setUrlToOpen] = useState("");
 
     const [status, setStatus] = useState("idle");
@@ -263,11 +263,12 @@ const startDownload = async () => {
                 </div>
             </div>
             {data && data.videoUrl && data.videoUrl.length > 1 &&  (
+                
                 <div className="flex flex-col  justify-center items-center text-center relative">
                    
 
-                    <span className="cursor-pointer">
-                        {data.title} ({formatTime(data.length)})
+                    <span className="cursor-pointer pb-8">
+                        {data.title} 
                     </span>
 {/*
                     <div className="relative w-96"> 
@@ -278,9 +279,30 @@ const startDownload = async () => {
         </div>
 */}
 
-    <button onClick={startDownload} disabled={status === "loading"}>
-      {status === "loading" ? "Preparing..." : "Full Download"}
+<section className="bg-gray-100 flex justify-center flex-col items-center p-6 rounded-lg shadow-md">
+  <h2 className="text-lg font-bold mb-4">Download didn't work?</h2>
+  <p className="text-md mb-6">Try our full-featured option to download your video in high quality.</p>
+  <form className="flex flex-row items-center">
+    <label className="text-md mb-2 mr-2" htmlfor="quality">Select quality:</label>
+   <select
+  id="quality"
+  name="quality"
+  defaultValue="medium"
+  className="py-1 px-1 text-md rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-600"
+>
+  <option value="high">High</option>
+  <option value="medium">Medium</option>
+  <option value="low">Low</option>
+</select>
+     </form>
+    <div>
+      <button
+      id="start-download" type="button" className="bg-green-500 hover:bg-green-700 text-white  py-2 px-4 rounded-lg mt-4"
+    onClick={startDownload} disabled={status === "loading"}>
+      {status === "loading" ? "Preparing..." : "Start Download"}
     </button>
+    </div>
+    </section>
                    
                 </div>
             )}

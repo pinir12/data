@@ -34,7 +34,7 @@ const qualityMap = {
 };
   const ytQuality = qualityMap[quality] || qualityMap.best;
 
- const outputFile = path.join(downloadDir, `${videoId}.${format}`);
+ const outputFile = path.join(downloadDir, `${title}.${format}`);
 
 try {
   const cookies_path = "/home/ubuntu/cookies.txt";
