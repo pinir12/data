@@ -40,26 +40,27 @@ export default async function handler(req, res) {
   const outputTemplate = path.join(downloadDir, "%(title)s.%(ext)s");
 
   try {
-    const ytDlpCmd = `yt-dlp -f "${ytQuality}" --cookies "${cookies_path}" -o "${outputTemplate}" "https://www.youtube.com/watch?v=${videoId}"`;
-    console.log(`Running: ${ytDlpCmd}`);
+   const ytDlpCmd = `yt-dlp -f "${ytQuality}" --cookies "${cookies_path}" -o "${outputTemplate}" --print filename "https://www.youtube.com/watch?v=${videoId}"`;
 
-    const { stdout, stderr } = await execPromise(ytDlpCmd);
+const { stdout, stderr } = await execPromise(ytDlpCmd);
 
-    console.log('yt-dlp stdout:', stdout);
-    console.log('yt-dlp stderr:', stderr);
+console.log('yt-dlp stdout:', stdout);
+console.log('yt-dlp stderr:', stderr);
 
-    if (!fs.existsSync(outputTemplate)) {
-      return res.status(500).json({ error: 'Downloaded file not found after yt-dlp run' });
-    }
+const outputFile = stdout.trim(); // This is the actual downloaded file path
+
+if (!fs.existsSync(outputFile)) {
+  return res.status(500).json({ error: 'Downloaded file not found after yt-dlp run' });
+}
 
     res.setHeader('Content-Disposition', `attachment; filename="${videoId}.${format}"`);
     res.setHeader('Content-Type', `video/${format}`);
 
-    const fileStream = fs.createReadStream(outputTemplate);
+    const fileStream = fs.createReadStream(outputFile);
     fileStream.pipe(res);
 
     fileStream.on('end', () => {
-      fs.unlink(outputTemplate, () => { }); // Cleanup temp file
+      fs.unlink(outputFile, () => { }); // Cleanup temp file
     });
 
     fileStream.on('error', (err) => {
