@@ -53,7 +53,7 @@ if (!fs.existsSync(outputFile)) {
   return res.status(500).json({ error: 'Downloaded file not found after yt-dlp run' });
 }
 
-    res.setHeader('Content-Disposition', `attachment; filename="${videoId}.${format}"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${outputFile}.${format}"`);
     res.setHeader('Content-Type', `video/${format}`);
 
     const fileStream = fs.createReadStream(outputFile);
