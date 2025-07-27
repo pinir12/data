@@ -28,7 +28,8 @@ export default async function handler(req, res) {
 
   try {
     // ✅ Run yt-dlp
-    const ytDlpCmd = `yt-dlp -f "${quality}" -o "${outputFile}" "https://www.youtube.com/watch?v=${videoId}"`;
+    const cookies_path = "/home/ubuntu/cookies.txt"
+    const ytDlpCmd = `yt-dlp -f "${quality}" "--cookies", cookies_path, -o "${outputFile}" "https://www.youtube.com/watch?v=${videoId}"`;
     console.log(`Running: ${ytDlpCmd}`);
 
     await execPromise(ytDlpCmd);
