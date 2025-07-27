@@ -50,11 +50,11 @@ try {
   res.setHeader('Content-Disposition', `attachment; filename="${videoId}.${format}"`);
   res.setHeader('Content-Type', `video/${format}`);
 
-    const fileStream = fs.createReadStream(newFilePath);
+    const fileStream = fs.createReadStream(outputFile);
     fileStream.pipe(res);
 
     fileStream.on('end', () => {
-      fs.unlink(newFilePath, () => {}); // cleanup temp file
+      fs.unlink(outputFile, () => {}); // cleanup temp file
     });
 
     fileStream.on('error', err => {
