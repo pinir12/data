@@ -7,7 +7,7 @@ import { getServerSession } from 'next-auth/next';
 const execPromise = promisify(exec);
 
 export default async function handler(req, res) {
-  const { videoId, quality = 'best' } = req.query;
+  const { videoId, quality = 'best', format = 'mp4' } = req.query;
 
   // Auth check
   const session = await getServerSession(req, res);
