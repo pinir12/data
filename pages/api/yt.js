@@ -51,6 +51,6 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error('yt-dlp error:', err);
-    res.status(500).json({ error: 'Failed to download video' });
+    res.status(500).json({ error: err });
   }
 }
