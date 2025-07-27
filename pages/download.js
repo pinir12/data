@@ -59,7 +59,7 @@ const startDownload = async () => {
 
   try {
     const res = await fetch(
-      `https://data.pinir.co.uk/yt?url=${encodeURIComponent(id)}`
+      `https://data.pinir.co.uk/yt?videoId=${encodeURIComponent(id)}`
     );
 
     if (!res.ok) {
