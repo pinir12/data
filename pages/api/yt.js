@@ -7,9 +7,9 @@ import { getServerSession } from 'next-auth/next';
 const execPromise = promisify(exec);
 
 export default async function handler(req, res) {
-  const { videoId, quality = 'best', format = 'mp4' } = req.query;
+  const { videoId, quality = 'best' } = req.query;
 
-  // ✅ Auth check
+  // Auth check
   const session = await getServerSession(req, res);
   if (!session) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing videoId parameter' });
   }
 
-  // ✅ Prepare download directory
+  // Prepare download directory
   const downloadDir = '/tmp/yt';
   if (!fs.existsSync(downloadDir)) fs.mkdirSync(downloadDir, { recursive: true });
 
@@ -32,38 +32,51 @@ export default async function handler(req, res) {
   const ytQuality = qualityMap[quality] || qualityMap.best;
 
   const cookies_path = '/home/ubuntu/cookies.txt';
-  const safeOutput = path.join(downloadDir, `${videoId}.%(ext)s`); // ✅ always predictable
+  const safeOutput = path.join(downloadDir, `${videoId}.%(ext)s`);
 
   try {
-    // ✅ 1. Download using videoId filename
-    const downloadCmd = `yt-dlp -q --no-warnings -f "${ytQuality}" --cookies "${cookies_path}" -o "${safeOutput}" --print filename "https://www.youtube.com/watch?v=${videoId}"`;
+    // Download with yt-dlp, force merge to mp4 if needed
+    const downloadCmd = `yt-dlp -q --no-warnings -f "${ytQuality}" --merge-output-format mp4 --cookies "${cookies_path}" -o "${safeOutput}" --print filename "https://www.youtube.com/watch?v=${videoId}"`;
     const { stdout: dlOut } = await execPromise(downloadCmd);
+
     let downloadedFile = dlOut.split('\n').map(s => s.trim()).filter(Boolean).pop();
-    if (!path.isAbsolute(downloadedFile)) downloadedFile = path.join(downloadDir, downloadedFile);
+    if (!path.isAbsolute(downloadedFile)) {
+      downloadedFile = path.join(downloadDir, downloadedFile);
+    }
 
-    // ✅ 2. Get video title separately
-    const titleCmd = `yt-dlp --cookies "${cookies_path}" --get-title "https://www.youtube.com/watch?v=${videoId}"`;
-    const { stdout: titleOut } = await execPromise(titleCmd);
-    const videoTitle = titleOut.trim().replace(/[<>:"/\\|?*]+/g, ''); // sanitize for filename
+    if (!fs.existsSync(downloadedFile)) {
+      console.error('Downloaded file not found:', downloadedFile);
+      return res.status(500).json({ error: 'Downloaded file not found after yt-dlp' });
+    }
 
-    // ✅ 3. Rename file to title.mp4
-    const newFilename = `${videoTitle}.${format}`;
-    const newFilePath = path.join(downloadDir, newFilename);
+    // Get video title for renaming
+    const { stdout: titleOut } = await execPromise(
+      `yt-dlp --cookies "${cookies_path}" --get-title "https://www.youtube.com/watch?v=${videoId}"`
+    );
+    const videoTitle = titleOut.trim().replace(/[<>:"/\\|?*]+/g, '');
+
+    // Determine extension of downloaded file
+    const ext = path.extname(downloadedFile);
+
+    // Rename to sanitized title + extension
+    const newFilePath = path.join(downloadDir, `${videoTitle}${ext}`);
     fs.renameSync(downloadedFile, newFilePath);
 
-    // ✅ 4. Serve file
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(newFilename)}"`);
-    res.setHeader('Content-Type', `video/${format}`);
+    // Stream the file to client
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(videoTitle)}${ext}"`);
+    res.setHeader('Content-Type', `video/${ext.slice(1)}`);
 
     const fileStream = fs.createReadStream(newFilePath);
     fileStream.pipe(res);
 
-    fileStream.on('end', () => fs.unlink(newFilePath, () => {})); // cleanup
+    fileStream.on('end', () => {
+      fs.unlink(newFilePath, () => {}); // cleanup temp file
+    });
+
     fileStream.on('error', err => {
       console.error(err);
       res.status(500).json({ error: 'File streaming error' });
     });
-
   } catch (err) {
     console.error('yt-dlp error:', err);
     res.status(500).json({ error: err.message || err });
