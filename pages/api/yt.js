@@ -31,40 +31,24 @@ export default async function handler(req, res) {
   };
   const ytQuality = qualityMap[quality] || qualityMap.best;
 
-  const cookies_path = '/home/ubuntu/cookies.txt';
-  const safeOutput = path.join(downloadDir, `${videoId}.%(ext)s`);
+ const outputFile = path.join(downloadDir, `${videoId}.${format}`);
 
-  try {
-    // Download with yt-dlp, force merge to mp4 if needed
-    const downloadCmd = `yt-dlp -q --no-warnings -f "${ytQuality}" --merge-output-format mp4 --cookies "${cookies_path}" -o "${safeOutput}" --print filename "https://www.youtube.com/watch?v=${videoId}"`;
-    const { stdout: dlOut } = await execPromise(downloadCmd);
+try {
+  const cookies_path = "/home/ubuntu/cookies.txt";
+  const ytDlpCmd = `yt-dlp -f "${ytQuality}" --cookies "${cookies_path}" -o "${outputFile}" "https://www.youtube.com/watch?v=${videoId}"`;
+  console.log(`Running: ${ytDlpCmd}`);
 
-    let downloadedFile = dlOut.split('\n').map(s => s.trim()).filter(Boolean).pop();
-    if (!path.isAbsolute(downloadedFile)) {
-      downloadedFile = path.join(downloadDir, downloadedFile);
-    }
+  const { stdout, stderr } = await execPromise(ytDlpCmd);
 
-    if (!fs.existsSync(downloadedFile)) {
-      console.error('Downloaded file not found:', downloadedFile);
-      return res.status(500).json({ error: 'Downloaded file not found after yt-dlp' });
-    }
+  console.log('yt-dlp stdout:', stdout);
+  console.log('yt-dlp stderr:', stderr);
 
-    // Get video title for renaming
-    const { stdout: titleOut } = await execPromise(
-      `yt-dlp --cookies "${cookies_path}" --get-title "https://www.youtube.com/watch?v=${videoId}"`
-    );
-    const videoTitle = titleOut.trim().replace(/[<>:"/\\|?*]+/g, '');
+  if (!fs.existsSync(outputFile)) {
+    return res.status(500).json({ error: 'Downloaded file not found after yt-dlp run' });
+  }
 
-    // Determine extension of downloaded file
-    const ext = path.extname(downloadedFile);
-
-    // Rename to sanitized title + extension
-    const newFilePath = path.join(downloadDir, `${videoTitle}${ext}`);
-    fs.renameSync(downloadedFile, newFilePath);
-
-    // Stream the file to client
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(videoTitle)}${ext}"`);
-    res.setHeader('Content-Type', `video/${ext.slice(1)}`);
+  res.setHeader('Content-Disposition', `attachment; filename="${videoId}.${format}"`);
+  res.setHeader('Content-Type', `video/${format}`);
 
     const fileStream = fs.createReadStream(newFilePath);
     fileStream.pipe(res);
