@@ -8,7 +8,7 @@ import { getServerSession } from 'next-auth/next'; // For NextAuth v4
 const execPromise = promisify(exec);
 
 export default async function handler(req, res) {
-  const { videoId, quality = 'medium', format = 'mp4' } = req.query;
+  const { videoId, quality = 'best', format = 'mp4' } = req.query;
 
   // ✅ Check auth session
   const session = await getServerSession(req, res);
@@ -24,14 +24,17 @@ export default async function handler(req, res) {
   const downloadDir = '/tmp/yt'; // Use tmp directory on OCI
   if (!fs.existsSync(downloadDir)) fs.mkdirSync(downloadDir, { recursive: true });
 
-  const outputFile = path.join(downloadDir, `${videoId}.${format}`);
+ 
 
-    const qualityMap = {
-    high: 'bestvideo+bestaudio/best',
-    medium: 'bestvideo[height<=720]+bestaudio/best[height<=720]',
-    low: 'bestvideo[height<=480]+bestaudio/best[height<=480]',
-  };
-  const ytQuality = qualityMap[quality] || qualityMap.medium;
+const qualityMap = {
+  high: 'bestvideo+bestaudio/best',
+  medium: 'bestvideo[height<=720]+bestaudio/best[height<=720]',
+  low: 'bestvideo[height<=480]+bestaudio/best[height<=480]',
+  best: 'bestvideo+bestaudio/best',
+};
+  const ytQuality = qualityMap[quality] || qualityMap.best;
+
+ const outputFile = path.join(downloadDir, `${videoId}.${format}`);
 
   try {
     // ✅ Run yt-dlp
