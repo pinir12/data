@@ -82,10 +82,10 @@ export default async function handler(req, res) {
         }
 
         // --- Set Headers for File Download ---
-        const safeFilename = actualFilename.replace(/["\r\n]/g, ''); // strip dangerous chars
+        const safeFilename = finalFilename.replace(/["\r\n]/g, ''); // strip dangerous chars
         res.setHeader(
             'Content-Disposition',
-            `attachment; filename="${safeFilename}"; filename*=UTF-8''${encodeURIComponent(actualFilename)}`
+            `attachment; filename="${safeFilename}"; filename*=UTF-8''${encodeURIComponent(finalFilename)}`
         );
         res.setHeader('Content-Type', `video/${format}`); // Set appropriate content type
 
