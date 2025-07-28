@@ -64,6 +64,10 @@ export default async function handler(req, res) {
 
         // --- Step 2: Download the video using yt-dlp ---
         const cookies_path = "/home/ubuntu/cookies.txt"; // Path to your cookies file
+
+        // Removed the fs.existsSync(cookies_path) check as per your feedback
+        // The original code worked without it, suggesting the file is accessible.
+
         const ytDlpCmd = `yt-dlp -f "${ytQuality}" --cookies "${cookies_path}" -o "${outputFile}" "https://www.youtube.com/watch?v=${videoId}"`;
         console.log(`Running download command: ${ytDlpCmd}`);
 

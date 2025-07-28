@@ -228,7 +228,7 @@ export default function Page() {
                     </span>
                 </div>
 
-                {/* Error Message Display */}
+                {/* Error Message Display }
                 <span className="h-8 text-red-500 text-center text-sm mt-4">
                     {errorMessage && <p className="font-medium">{errorMessage}</p>}
                 </span>
