@@ -1,9 +1,10 @@
+'use client';
 import Head from 'next/head';
 import { useState, useEffect } from 'react';
 
 function HomePage() {
   const [ipAddress, setIpAddress] = useState('0.0.0.0');
-  const [currentTime, setCurrentTime] = useState(new Date());
+   const [dateTime, setDateTime] = useState(new Date());
 
   useEffect(() => {
     fetch('https://api.ipify.org?format=json')
@@ -13,18 +14,26 @@ function HomePage() {
   }, []);
 
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDateTime(new Date());
+    }, 1000); // update every 1 second
+
+    return () => clearInterval(timer); // cleanup on unmount
+  }, []);
+
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen">
+    <div className="flex flex-col items-center justify-center h-screen text-center">
       <Head>
         <title>System Status</title>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <h1 id="time" className="text-5xl font-bold mb-4">Time - Date</h1>
-      <h3 className="text-3xl font-bold mb-4">&#x1F7E2; All systems operational</h3>
-      <p id="ip-text" className="text-lg mb-2">The originating IP address of the client-side request is: {ipAddress}</p>
-      <p className="text-lg mt-4">This endpoint serves as a verification checkpoint for configuration and connectivity.</p>
+      <h1 id="time" className="text-5xl font-bold mb-8"> {dateTime.toLocaleString()}</h1>
+      <h3 className="text-3xl font-bold mb-8">&#x1F7E2; All systems operational</h3>
+      <p id="ip-text" className="text-lg mb-2">The originating IP address of the client-side request is {ipAddress}</p>
+      <p className="text-lg mt-4 text-gray-900">This endpoint operates as a verification mechanism for assessing configuration integrity and validating protocol-layer connectivity.</p>
     </div>
   );
 }
