@@ -82,12 +82,12 @@ export default async function handler(req, res) {
         }
 
         // --- Set Headers for File Download ---
-        const safeFilename = finalFilename.replace(/["\r\n]/g, ''); // strip dangerous chars
+        const headerSafeFilename = finalFilename.replace(/[^a-zA-Z0-9._-]/g, '_'); // make ASCII-only fallback
         res.setHeader(
             'Content-Disposition',
-            `attachment; filename="${safeFilename}"; filename*=UTF-8''${encodeURIComponent(finalFilename)}`
+            `attachment; filename="${headerSafeFilename}"; filename*=UTF-8''${encodeURIComponent(finalFilename)}`
         );
-        res.setHeader('Content-Type', `video/${format}`); // Set appropriate content type
+        res.setHeader('Content-Type', `video/${format}`);
 
         // --- Stream File to Response ---
         const fileStream = fs.createReadStream(outputFile);
