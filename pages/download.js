@@ -186,17 +186,7 @@ export default function Page() {
         handleGoClick(url);
     };
 
-    // Formats time from seconds to HH:MM:SS (not directly used in this version but kept)
-    const formatTime = (seconds) => {
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const remainingSeconds = seconds % 60;
-
-        return `${hours.toString().padStart(2, "0")}:${minutes
-            .toString()
-            .padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
-    };
-
+   
     // Effect to check for video ID in URL parameters on component mount
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -212,13 +202,14 @@ export default function Page() {
     // Render the component based on user session
     if (session && (session.user.role === 'admin' || session.user.role === 'user')) {
         return (
-            <div className="w-full h-screen flex flex-col items-center p-4"
+            <div className="w-full h-screen flex flex-col items-center"
                 onDrop={handleDrop}
                 onDragOver={(e) => e.preventDefault()}
             >
                 {/* Sign Out Button */}
                 <div className="static top-0 w-full">
-                    <span className="flex flex-row justify-end items-right bg-gray-100 p-2 rounded-md shadow-sm">
+                    <span className="flex flex-row justify-between items-right bg-gray-100 p-2 rounded-md shadow-sm">
+                       <span className="text-gray-600">Hi, {session.user.name.split(" ")[0]}!</span>
                         <span
                             onClick={() => signOut()}
                             className="bg-slate-500 hover:bg-gray-400 text-sm border border-slate-100 cursor-pointer rounded px-3 py-1 text-white transition duration-200 ease-in-out"
@@ -234,7 +225,7 @@ export default function Page() {
                 </span>
 
                 {/* Input and Go/Clear Buttons */}
-                <div className="flex flex-row justify-center mb-8 w-full max-w-xl">
+                <div className="flex flex-row justify-center my-8 w-full max-w-xl">
                     <input
                         className="bg-gray-100 border border-gray-400 focus:border-blue-500 rounded-l-lg flex-grow h-10 px-4 text-base outline-none shadow-sm transition duration-200 ease-in-out"
                         placeholder="Insert YouTube video URL or ID"
