@@ -7,62 +7,100 @@ import { getServerSession } from 'next-auth/next';
 const execPromise = promisify(exec);
 
 export default async function handler(req, res) {
-  const { videoId, quality = 'best', format = 'mp4' } = req.query;
+    const { videoId, quality = 'best', format = 'mp4' } = req.query;
 
-  // Auth check
-  const session = await getServerSession(req, res);
-  if (!session) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+    // --- Authentication Check ---
+    const session = await getServerSession(req, res);
+    if (!session) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-  if (!videoId) {
-    return res.status(400).json({ error: 'Missing videoId parameter' });
-  }
+    // --- Input Validation ---
+    if (!videoId) {
+        return res.status(400).json({ error: 'Missing videoId parameter' });
+    }
 
-  // Prepare download directory
-  const downloadDir = '/tmp/yt';
-  if (!fs.existsSync(downloadDir)) fs.mkdirSync(downloadDir, { recursive: true });
+    // --- Prepare Download Directory ---
+    const downloadDir = '/tmp/yt'; // Temporary directory for downloads
+    if (!fs.existsSync(downloadDir)) {
+        fs.mkdirSync(downloadDir, { recursive: true });
+    }
 
-  const qualityMap = {
-    high: 'best',
-    medium: 'best[height<=720]',
-    low: 'best[height<=480]',
-    best: 'best',
-  };
-  const ytQuality = qualityMap[quality] || qualityMap.best;
+    // --- Map Quality Options to yt-dlp Formats ---
+    const qualityMap = {
+        high: 'bestvideo[height>=1080]+bestaudio/best[height>=1080]', // Prefer 1080p, then best overall
+        medium: 'bestvideo[height<=720]+bestaudio/best[height<=720]', // Prefer 720p, then best overall
+        low: 'bestvideo[height<=480]+bestaudio/best[height<=480]',   // Prefer 480p, then best overall
+        best: 'best', // Default to best available quality
+    };
+    const ytQuality = qualityMap[quality] || qualityMap.best;
 
- const outputFile = path.join(downloadDir, `${videoId}.${format}`);
+    let finalFilename = `${videoId}.${format}`; // Default filename, will be updated
 
-try {
-  const cookies_path = "/home/ubuntu/cookies.txt";
-  const ytDlpCmd = `yt-dlp -f "${ytQuality}" --cookies "${cookies_path}" -o "${outputFile}" "https://www.youtube.com/watch?v=${videoId}"`;
-  console.log(`Running: ${ytDlpCmd}`);
+    try {
+        // --- Step 1: Get the actual video title and extension for the filename ---
+        // This command outputs the desired filename format (title.ext) to stdout
+        const filenameCmd = `yt-dlp --get-filename -o "%(title)s.%(ext)s" "https://www.youtube.com/watch?v=${videoId}"`;
+        console.log(`Running filename command: ${filenameCmd}`);
 
-  const { stdout, stderr } = await execPromise(ytDlpCmd);
+        const { stdout: filenameStdout, stderr: filenameStderr } = await execPromise(filenameCmd);
+        console.log('Filename command stdout:', filenameStdout);
+        if (filenameStderr) console.error('Filename command stderr:', filenameStderr);
 
-  console.log('yt-dlp stdout:', stdout);
-  console.log('yt-dlp stderr:', stderr);
+        if (filenameStdout) {
+            // Trim whitespace and newlines, then sanitize for valid filename characters
+            finalFilename = filenameStdout.trim();
+            // Replace characters that are invalid in filenames with underscores
+            finalFilename = finalFilename.replace(/[\\/:*?"<>|]/g, '_');
+            // Ensure it doesn't start or end with a dot or space (common issues)
+            finalFilename = finalFilename.replace(/^\.+|\.+$/g, '').replace(/^\s+|\s+$/g, '');
+            // Limit length if necessary (optional, but good practice for very long titles)
+            if (finalFilename.length > 200) {
+                finalFilename = finalFilename.substring(0, 200) + '...';
+            }
+        }
 
-  if (!fs.existsSync(outputFile)) {
-    return res.status(500).json({ error: 'Downloaded file not found after yt-dlp run' });
-  }
+        const outputFile = path.join(downloadDir, finalFilename); // Use the derived filename for the output path
 
-  res.setHeader('Content-Disposition', `attachment; filename="${videoId}.${format}"`);
-  res.setHeader('Content-Type', `video/${format}`);
+        // --- Step 2: Download the video using yt-dlp ---
+        const cookies_path = "/home/ubuntu/cookies.txt"; // Path to your cookies file
+        const ytDlpCmd = `yt-dlp -f "${ytQuality}" --cookies "${cookies_path}" -o "${outputFile}" "https://www.youtube.com/watch?v=${videoId}"`;
+        console.log(`Running download command: ${ytDlpCmd}`);
 
-    const fileStream = fs.createReadStream(outputFile);
-    fileStream.pipe(res);
+        const { stdout, stderr } = await execPromise(ytDlpCmd); // Execute the download command
+        console.log('yt-dlp download stdout:', stdout);
+        if (stderr) console.error('yt-dlp download stderr:', stderr);
 
-    fileStream.on('end', () => {
-      fs.unlink(outputFile, () => {}); // cleanup temp file
-    });
+        // --- Verify Downloaded File ---
+        if (!fs.existsSync(outputFile)) {
+            return res.status(500).json({ error: 'Downloaded file not found after yt-dlp run. Check yt-dlp output for errors.' });
+        }
 
-    fileStream.on('error', err => {
-      console.error(err);
-      res.status(500).json({ error: 'File streaming error' });
-    });
-  } catch (err) {
-    console.error('yt-dlp error:', err);
-    res.status(500).json({ error: err.message || err });
-  }
+        // --- Set Headers for File Download ---
+        res.setHeader('Content-Disposition', `attachment; filename="${finalFilename}"`);
+        res.setHeader('Content-Type', `video/${format}`); // Set appropriate content type
+
+        // --- Stream File to Response ---
+        const fileStream = fs.createReadStream(outputFile);
+        fileStream.pipe(res); // Pipe the file stream directly to the HTTP response
+
+        // --- Cleanup Temporary File ---
+        fileStream.on('end', () => {
+            fs.unlink(outputFile, (err) => {
+                if (err) console.error(`Error deleting temporary file ${outputFile}:`, err);
+                else console.log(`Temporary file ${outputFile} deleted.`);
+            });
+        });
+
+        fileStream.on('error', err => {
+            console.error('File streaming error:', err);
+            res.status(500).json({ error: 'File streaming error' });
+        });
+
+    } catch (err) {
+        console.error('yt-dlp or file operation error:', err);
+        // Provide more detailed error message if available
+        const errorMessage = err.message || 'An unknown error occurred during download.';
+        res.status(500).json({ error: errorMessage });
+    }
 }
