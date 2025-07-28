@@ -8,6 +8,7 @@ const execPromise = promisify(exec);
 
 export default async function handler(req, res) {
     const { videoId, quality = 'best', format = 'mp4' } = req.query;
+       const cookies_path = "/home/ubuntu/cookies.txt"; // Path to your cookies file
 
     // --- Authentication Check ---
     const session = await getServerSession(req, res);
@@ -40,7 +41,7 @@ export default async function handler(req, res) {
     try {
         // --- Step 1: Get the actual video title and extension for the filename ---
         // This command outputs the desired filename format (title.ext) to stdout
-        const filenameCmd = `yt-dlp --get-filename -o "%(title)s.%(ext)s" "https://www.youtube.com/watch?v=${videoId}"`;
+        const filenameCmd = `yt-dlp --cookies "${cookies_path}"  --get-filename -o "%(title)s.%(ext)s" "https://www.youtube.com/watch?v=${videoId}"`;
         console.log(`Running filename command: ${filenameCmd}`);
 
         const { stdout: filenameStdout, stderr: filenameStderr } = await execPromise(filenameCmd);
@@ -63,7 +64,7 @@ export default async function handler(req, res) {
         const outputFile = path.join(downloadDir, finalFilename); // Use the derived filename for the output path
 
         // --- Step 2: Download the video using yt-dlp ---
-        const cookies_path = "/home/ubuntu/cookies.txt"; // Path to your cookies file
+     
 
         // Removed the fs.existsSync(cookies_path) check as per your feedback
         // The original code worked without it, suggesting the file is accessible.
