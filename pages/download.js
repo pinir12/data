@@ -103,7 +103,7 @@ export default function Page() {
         } catch (err) {
             console.error("Download error:", err);
             setErrorMessage(`Download failed: ${err.message}`);
-            setDownloadProgress({ status: 'error', percentage: 0, message: `Download failed: ${err.message}` });
+            setDownloadProgress({ status: 'error', percentage: 0, message: `Download failed` }); // removed ${err.message}
         } finally {
             setDownloadButtonLoading(false); // Hide spinner on the "Start Download" button
         }
@@ -139,10 +139,13 @@ export default function Page() {
             try {
                 const parsedUrl = new URL(urlString);
                 videoId = parsedUrl.searchParams.get("v");
-
-                if (!videoId && urlString.includes("youtu.be/")) {
+// does !videoId check work well?
+                if (!videoId && (urlString.includes("youtu.be/") || urlString.includes("shorts/") || urlString.includes("embed")) ) {
                     videoId = parsedUrl.pathname.split("/").pop();
                 }
+
+              
+                
             } catch (e) {
                 setErrorMessage("Invalid URL format.");
                 return;
@@ -186,7 +189,7 @@ export default function Page() {
         handleGoClick(url);
     };
 
-   
+
     // Effect to check for video ID in URL parameters on component mount
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -194,7 +197,7 @@ export default function Page() {
 
         if (videoIdFromUrl) {
             setId(videoIdFromUrl);
-            setInputUrl(`https://www.youtube.com/watch?v=${videoIdFromUrl}`);
+            setInputUrl(videoIdFromUrl);
             fetchVideoData(videoIdFromUrl);
         }
     }, []);
@@ -209,7 +212,7 @@ export default function Page() {
                 {/* Sign Out Button */}
                 <div className="static top-0 w-full">
                     <span className="flex flex-row justify-between items-right bg-gray-100 p-2 rounded-md shadow-sm">
-                       <span className="text-gray-600">Hi, {session.user.name.split(" ")[0]}!</span>
+                        <span className="text-gray-600">Hi, {session.user.name.split(" ")[0]}!</span>
                         <span
                             onClick={() => signOut()}
                             className="bg-slate-500 hover:bg-gray-400 text-sm border border-slate-100 cursor-pointer rounded px-3 py-1 text-white transition duration-200 ease-in-out"
@@ -285,7 +288,7 @@ export default function Page() {
 
                 {/* Video Data and Download Section */}
                 {data && data.videoUrl && data.videoUrl.length > 1 && (
-                    <div className="flex flex-col justify-center items-center text-center relative w-full max-w-xl bg-white p-6 rounded-lg shadow-lg">
+                    <div className="flex flex-col justify-center items-center text-center relative w-full border border-slate-200  max-w-xl bg-white p-6 rounded-lg shadow-lg">
                         <span className="cursor-pointer pb-4 text-lg font-semibold text-gray-800">
                             {data.title}
                         </span>
@@ -310,11 +313,11 @@ export default function Page() {
                                 <button
                                     id="start-download"
                                     type="button"
-                                    className={`bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg mt-6 shadow-md transition duration-200 ease-in-out ${downloadButtonLoading ? "opacity-70 cursor-not-allowed" : ""}`}
+                                    className={` w-[166px] bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg mt-6 shadow-md transition duration-200 ease-in-out ${downloadButtonLoading ? "opacity-70 cursor-not-allowed" : ""}`}
                                     onClick={startDownload}
                                     disabled={downloadButtonLoading} // Controls spinner for 'Start Download' button
                                 >
-                                    {downloadButtonLoading ? "Processing..." : "Start Download"}
+                                    {downloadButtonLoading ?  (<span className="flex items-center justify-start gap-2 -ml-2"> <Spinner size={5} bg={'text-slate-300'} fill={'fill-white'} />Processing...</span>) : "Start Download"}
                                 </button>
                             </div>
                         </section>
