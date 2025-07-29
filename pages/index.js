@@ -30,7 +30,7 @@ function HomePage() {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <h1 id="time" className="text-5xl font-bold mb-8"> {dateTime.toLocaleString()}</h1>
+      <h1 id="time" className="text-5xl font-bold mb-8"> {dateTime.toLocaleString('en-GB')}</h1>
       <h3 className="text-3xl font-bold mb-8">&#x1F7E2; All systems operational</h3>
       <p id="ip-text" className="text-lg mb-2">The originating IP address of the client-side request is {ipAddress}</p>
       <p className="text-lg mt-4 text-gray-900">This endpoint operates as a verification mechanism for assessing configuration integrity and validating protocol-layer connectivity.</p>
