@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     try {
         // --- Step 1: Get the actual video title and extension for the filename ---
         // This command outputs the desired filename format (title.ext) to stdout
-        const filenameCmd = `yt-dlp --cookies "${cookies_path}"  --get-filename -o "%(title)s.%(ext)s" "https://www.youtube.com/watch?v=${videoId}"`;
+        const filenameCmd = `yt-dlp --cookies "${cookies_path}"  --get-filename -o "%(title)s.%(ext)s" "${videoId}"`;
         console.log(`Running filename command: ${filenameCmd}`);
 
         const { stdout: filenameStdout, stderr: filenameStderr } = await execPromise(filenameCmd);
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
         // Removed the fs.existsSync(cookies_path) check as per your feedback
         // The original code worked without it, suggesting the file is accessible.
 
-        const ytDlpCmd = `yt-dlp -f "${ytQuality}" --cookies "${cookies_path}" -o "${outputFile}" "https://www.youtube.com/watch?v=${videoId}"`;
+        const ytDlpCmd = `yt-dlp -f "${ytQuality}" --cookies "${cookies_path}" -o "${outputFile}" "${videoId}"`;
         console.log(`Running download command: ${ytDlpCmd}`);
 
         const { stdout, stderr } = await execPromise(ytDlpCmd); // Execute the download command
