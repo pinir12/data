@@ -1,5 +1,6 @@
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 
 export default function SignIn() {
 const router = useRouter();
@@ -29,7 +30,11 @@ const handleSignin = () => {
 
 
   return (
-
+<>
+     <Head>
+                  <title>Sign in</title>
+      
+            </Head>
     <div className={`bg-gradient-to-r from-rose-300 via-pink-00 to-fuchsia-300 `}> 
       <div className="h-screen flex justify-center items-center">
         <div className="relative bg-white mx-4 p-8 pt-2 rounded  flex flex-col justify-center items-center shadow-2xl w-full sm:w-2/3 md:w-1/2 lg:w-1/3">
@@ -69,6 +74,6 @@ const handleSignin = () => {
       </div>
       </div>
     </div>
-
+</>
   );
 }

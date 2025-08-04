@@ -4,13 +4,17 @@ import { SessionProvider, useSession } from 'next-auth/react';
 
 
 export default function App({ Component, pageProps: { ...pageProps }, router }) {
- 
+
   return (
     <>
-  
-     <SessionProvider>
-      <Component {...pageProps} />
- 
+      <Head>
+        <link rel="icon" type="image/x-icon" href="/assets/favicon.png" />
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
+      <SessionProvider>
+        <Component {...pageProps} />
+
       </SessionProvider>
     </>
   );

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 
 function HomePage() {
   const [ipAddress, setIpAddress] = useState('');
-   const [dateTime, setDateTime] = useState(new Date());
+  const [dateTime, setDateTime] = useState(new Date());
 
   useEffect(() => {
     fetch('https://api.ipify.org?format=json')
@@ -27,14 +27,12 @@ function HomePage() {
     <div className="flex flex-col items-center justify-center h-screen text-center">
       <Head>
         <title>System Status</title>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <h1 id="time" className="text-5xl font-bold mb-8"> {dateTime.toLocaleString()}</h1>
       <h3 className="text-3xl font-bold mb-8">&#x1F7E2; All systems operational</h3>
-      <p id="ip-text" className="text-lg mb-2">The originating IP address of the client-side request is 
-        {ipAddress? <span> {ipAddress}</span>: <span className='text-gray-500'> 0.0.0.0</span>}
-        </p>
+      <p id="ip-text" className="text-lg mb-2">The originating IP address of the client-side request is
+        {ipAddress ? <span> {ipAddress}</span> : <span className='text-gray-500'> 0.0.0.0</span>}
+      </p>
       <p className="text-lg mt-4 text-gray-900">This endpoint operates as a verification mechanism for assessing configuration integrity and validating protocol-layer connectivity.</p>
     </div>
   );
