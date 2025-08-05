@@ -31,7 +31,7 @@ export default function Page() {
         setData(null); // Clear previous video data
 
         try {
-            const response = await fetch(`/api/download?id=${videoId}`);
+            const response = await fetch(`/api/yt?id=${videoId}&type=url`);
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -41,9 +41,9 @@ export default function Page() {
             const videoData = await response.json();
             setData(videoData);
 
-            if (videoData && videoData.videoUrl) {
-                setUrlToOpen(videoData.videoUrl); // Set URL to open in new tab
-            }
+          //  if (videoData && videoData.videoUrl) {
+          //      setUrlToOpen(videoData.videoUrl); // Set URL to open in new tab
+          //  }
 
         } catch (error) {
             console.error("Error fetching video data:", error);
@@ -65,7 +65,7 @@ export default function Page() {
         try {
             // Fetch the video blob from your backend API
             const res = await fetch(
-                `/api/yt?videoId=${encodeURIComponent(id)}&quality=${document.getElementById('quality').value}`
+                `/api/yt?videoId=${encodeURIComponent(id)}&quality=${document.getElementById('quality').value}&type=file`
             );
 
             if (!res.ok) {
@@ -110,13 +110,14 @@ export default function Page() {
         }
     };
 
-    // Effect to open video URL in a new tab when urlToOpen state changes (only for fetchVideoData)
+  /* //remove open new tab, replace with button  // Effect to open video URL in a new tab when urlToOpen state changes (only for fetchVideoData)
     useEffect(() => {
         if (urlToOpen) {
             window.open(urlToOpen, '_blank');
             setUrlToOpen(null); // Reset the URL to avoid opening it repeatedly
         }
     }, [urlToOpen]);
+    */
 
     // Handles Enter key press in the input field
     const handleKeyDown = (event) => {
@@ -297,6 +298,16 @@ export default function Page() {
                             <span className="cursor-pointer pb-4 text-lg font-semibold text-gray-800">
                                 {data.title}
                             </span>
+
+                            <div>
+                             <span className="text-gray-500 text-sm">Tip - Right click/long press on the Save Video button to save directly without opening in a new tab</span>   
+                    <a target="_blank" href={data.videoUrl}>
+                        <div className="px-3 py-1 rounded cursor-pointer bg-green-500 hover:bg-green-400 text-white">
+                            Save video
+                        </div>
+                    </a>
+
+                    </div>
 
                             <section className="bg-gray-100 flex justify-center flex-col items-center p-6 rounded-lg shadow-md w-full">
                                 <h2 className="text-xl font-bold mb-4 text-gray-900">Download didn't work?</h2>

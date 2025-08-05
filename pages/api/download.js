@@ -9,15 +9,49 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+const session = await getServerSession(req, res);
+
+const userEmail = session.user.email;
+const userRole = session.user.role;
+const id = req.query.id;
+
 export default async function Handler(req, res) {
-  const session = await getServerSession(req, res);
+
 
   if (!session) {
     return res.status(401).json({ error: "Unauthorized" });
+  } else {
+    //if user exists, check from table active status
+    if (userRole != 'admin') {
+      try {
+        const { data: isActive, error: isActiveError } = await supabase
+          .from('download_users')
+          .select('isActive')
+          .eq('email', userEmail);
+
+        if (!isActive) {
+          return res.status(401).json({ error: "User not active" });
+        }
+
+        if (isActiveError) {
+          console.error("Error fetching fetching user active status:", isActiveError);
+          throw new Error('Error fetching fetching user active status');
+        }
+      }
+      catch (error) {
+        console.error("Error:", error); // Simplified error message
+        res.status(500).json({ error: error.message });
+      }
+
+
+    }
   }
 
-  const userEmail = session.user.email;
-  const id = req.query.id;
+
+
+
+
+
 
   try {
     const response = await fetch(`https://ytstream-download-youtube-videos.p.rapidapi.com/dl?id=${id}`, {
@@ -40,8 +74,9 @@ export default async function Handler(req, res) {
     const videoTitle = data.title;
     const thumbnailUrl = data.thumbnail[1]?.url;
 
-
+ if (userRole != 'admin') {
     const newCount = await updateDatabase(id, videoTitle, userEmail);
+ 
 
     const name = session.user.name;
     const firstName = name.split(" ")[0];
@@ -60,6 +95,7 @@ export default async function Handler(req, res) {
       subject: `Video download by ${name} (${newCount})`,
       react: admin({ title: videoTitle, name: name, count: newCount }),
     });
+  }
 
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('X-Extension-Request', 'true');
@@ -114,7 +150,7 @@ const updateDatabase = async (url, videoTitle, userEmail) => {
       .insert([{ url, video_title: videoTitle, user_email: userEmail }]);
 
     if (downloadError) {
-      console.error("Error adding download:", downloadError);
+      console.error("Error adding download record:", downloadError);
       throw new Error('Error adding download record');
     }
 
