@@ -15,7 +15,7 @@ export default function Page() {
     const [downloadButtonLoading, setDownloadButtonLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [data, setData] = useState(null); // Stores video metadata from initial fetch
-    const [urlToOpen, setUrlToOpen] = useState(""); // For opening video URL in new tab
+    // const [urlToOpen, setUrlToOpen] = useState(""); // For opening video URL in new tab
 
     // State for download progress display (only for startDownload function)
     const [downloadProgress, setDownloadProgress] = useState({
@@ -36,7 +36,7 @@ export default function Page() {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(`HTTP error! Status: ${response.status} - ${errorText}`);
+                throw new Error(errorText);
             }
 
             const videoData = await response.json();
@@ -47,10 +47,9 @@ export default function Page() {
             //  }
 
         } catch (error) {
-            console.error("Error fetching video data:", error);
-            setErrorMessage(
-                "Error loading video information. Please try again later."
-            );
+            //console.error("Error fetching video data:", error);
+            console.error(error);
+            setErrorMessage(`${error}`);
         } finally {
             setButtonLoading(false); // Hide spinner on the "Go" button
         }
@@ -229,13 +228,10 @@ export default function Page() {
                         </span>
                     </div>
 
-                    {/* Error Message Display }
-                <span className="h-8 text-red-500 text-center text-sm mt-4">
-                    {errorMessage && <p className="font-medium">{errorMessage}</p>}
-                </span>
 
-                {/* Input and Go/Clear Buttons */}
-                    <div className="flex flex-row justify-center my-8 w-full max-w-xl">
+
+                    {/* Input and Go/Clear Buttons */}
+                    <div className="flex flex-row justify-center mt-8 w-full max-w-xl">
                         <input
                             className="bg-gray-100 border border-gray-400 focus:border-blue-500 rounded-l-lg flex-grow h-10 px-4 text-base outline-none shadow-sm transition duration-200 ease-in-out"
                             placeholder="Insert YouTube video URL or ID"
@@ -247,7 +243,7 @@ export default function Page() {
                         <div className="flex text-center">
                             <button
                                 className={`w-16 h-10 px-3 py-1 bg-blue-600 text-white rounded-none cursor-pointer flex items-center justify-center transition duration-200 ease-in-out ${buttonLoading ? "opacity-70 cursor-not-allowed" : "hover:bg-blue-700"}`}
-                                onClick={handleGoClick}
+                                onClick={() => handleGoClick("")}
                                 disabled={buttonLoading} // Controls spinner for 'Go' button
                             >
                                 {buttonLoading ? (
@@ -291,7 +287,15 @@ export default function Page() {
                                 </svg>
                             </div>
                         </div>
-                    </div>
+</div>
+
+                        {/* Error Message Display */}
+                        <span className="h-8 text-red-500 text-left w-full max-w-xl px-1 text-xs my-2">
+                            {!data && errorMessage && <p className="">{errorMessage}</p>}
+                        </span>
+
+
+                   
 
                     {/* Video Data and Download Section */}
                     {data && data.videoUrl && data.videoUrl.length > 1 && (
@@ -301,13 +305,13 @@ export default function Page() {
                             </span>
 
                             <div className="flex flex-col items-center justify-center mb-8 space-y-1 w-full">
-                               
+
                                 <a target="_blank" href={data.videoUrl}>
                                     <div className="px-3 py-1 w-32 rounded cursor-pointer bg-blue-500 hover:bg-blue-400 text-white">
                                         Save video
                                     </div>
                                 </a>
- <span className="text-gray-500 text-sm">Tip: Right click or long press on the Save Video button, and select 'Save linked file' to save directly without opening in a new tab. Use the copy button above to copy the video file name.</span>
+                                <span className="text-gray-500 text-sm">Tip: Right click or long press on the Save Video button, and select 'Save linked file' to save directly without opening in a new tab. Use the copy button above to copy the video file name.</span>
                             </div>
 
                             <section className="bg-gray-100 flex justify-center flex-col items-center p-6 rounded-lg shadow-md w-full">
