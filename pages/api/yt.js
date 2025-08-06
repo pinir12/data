@@ -8,38 +8,48 @@ import { Resend } from 'resend';
 import { videoDownloaded } from "../../Components/EmailTemplates/videoDownloaded";
 import { admin } from "../../Components/EmailTemplates/admin";
 
-//add is active and file downloaded to db, get new video id when added from url function to pass to file to update
+//add file downloaded to db, get new video id when added from url function to pass to file to update
+// ensure id col is changed to videoId. or video_id and update here accordingly in all supabase functions
 
 //if possible to get url directly from ytdlp, scrap rapidapi and consolidate all further
+//but also get title. rename me to admin. format res stdout for url
+
+
 // need to try wth reg account and get db running properly - inc return video id for update
+
+
+//implement ui to update cookies
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-
-
-
 const execPromise = promisify(exec);
 
 export default async function handler(req, res) {
+
     const { videoId, quality = 'best', format = 'mp4', type } = req.query;
 
-console.log("Request Query:", req.query); // Log the request query for debugging
-
-    const cookies_path = "/home/ubuntu/cookies.txt"; // Path to your cookies file
+    const cookies_path = "/home/ubuntu/cookies.txt"; // Path to cookies file
 
     const session = await getServerSession(req, res);
-
-console.log("Session:", session);   
     const userEmail = session.user.email;
     const userName = session.user.name;
-    const id = req.query.id;
+
+    // --- Map Quality Options to yt-dlp Formats ---
+    const qualityMap = {
+        high: 'bestvideo[height>=1080]+bestaudio/best[height>=1080]', // Prefer 1080p, then best overall
+        medium: 'bestvideo[height<=720]+bestaudio/best[height<=720]', // Prefer 720p, then best overall
+        low: 'bestvideo[height<=480]+bestaudio/best[height<=480]',   // Prefer 480p, then best overall
+        best: 'best', // Default to best available quality
+    };
+    const ytQuality = qualityMap[quality] || qualityMap.best;
 
     let supabaseVideoId;
 
     // --- Authentication Check ---
     if (!session) {
+        console.log( 'error: Unauthorized' )
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -48,107 +58,103 @@ console.log("Session:", session);
         return res.status(400).json({ error: 'Missing videoId parameter' });
     }
 
+
+    if (userName != 'Pini Roth') {
+        try {
+            const { data: isActive, error: isActiveError } = await supabase
+                .from('download_users')
+                .select('is_active')
+                .eq('email', userEmail);
+
+            if (!isActive) {
+                 console.log( "error: User not active" )
+                return res.status(401).json({ error: "User not active" });
+            }
+
+            if (isActiveError) {
+                console.error("Error fetching fetching user active status:", isActiveError);
+                throw new Error('Error fetching fetching user active status');
+            }
+        }
+        catch (error) {
+            console.error('yt-dlp or file operation error:', err);
+            // Provide more detailed error message if available
+            const errorMessage = err.message || 'An unknown error occurred during download.';
+            res.status(500).json({ error: errorMessage });
+        }
+
+
+    }
+
+
+
+
     if (type == "url") {
 
-        if (userName != 'Pini Roth') {
-            try {
-                const { data: isActive, error: isActiveError } = await supabase
-                    .from('download_users')
-                    .select('is_active')
-                    .eq('email', userEmail);
-
-                if (!isActive) {
-                    return res.status(401).json({ error: "User not active" });
-                }
-
-                if (isActiveError) {
-                    console.error("Error fetching fetching user active status:", isActiveError);
-                    throw new Error('Error fetching fetching user active status');
-                }
-            }
-            catch (error) {
-                console.error("Error:", error); // Simplified error message
-                res.status(500).json({ error: error.message });
-            }
-
-
-        }
-
-
-
         try {
-            const response = await fetch(`https://ytstream-download-youtube-videos.p.rapidapi.com/dl?id=${videoId}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'x-rapidapi-ua': 'RapidAPI-Playground',
-                    'x-rapidapi-key': process.env.NEXT_PUBLIC_RAPID_API_KEY,
-                    'x-rapidapi-host': 'ytstream-download-youtube-videos.p.rapidapi.com',
-                },
-            });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`API request failed with status ${response.status}: ${JSON.stringify(errorData)}`);
-            }
+            // --- Step 1: Get the actual video title and extension for the filename ---
+            // This command outputs the desired filename format (title.ext) to stdout
+            const urlCmd = `yt-dlp --cookies "${cookies_path}"  --get-url --get-title -output "%(title)s: %(url)s" "${videoId}"`;
+            console.log(`Running url command: ${urlCmd}`);
 
-            const data = await response.json();
-            console.log("--------------------------------Data from API:", data); // Log the data for debugging
-            const videoTitle = data.title;
-            const thumbnailUrl = data.thumbnail[1]?.url;
+            const { stdout: urlStdout, stderr: urlStderr } = await execPromise(urlCmd);
+            console.log('URL command stdout:', urlStdout);
+            if (urlStderr) console.error('URL command stderr:', urlStderr);
 
 
 
-                    const updateDatabase = async (url, videoTitle, userEmail) => {
-            try {
-                const { data: countData, error: countError } = await supabase
-                    .from('download_users')
-                    .select('count', { count: 'exact' })
-                    .eq('email', userEmail);
 
-                if (countError) {
-                    console.error("Error fetching count:", countError);
-                    throw new Error('Error fetching download count');
-                }
 
-                let newCount = 1;
-                if (countData) {
-                    newCount = countData[0].count + 1;
-
-                    const { error: updateError } = await supabase
+            const updateDatabase = async (url, videoTitle, userEmail) => {
+                try {
+                    const { data: countData, error: countError } = await supabase
                         .from('download_users')
-                        .update({ count: newCount })
+                        .select('count', { count: 'exact' })
                         .eq('email', userEmail);
 
-                    if (updateError) {
-                        console.error("Error updating count:", updateError);
-                        throw new Error('Error updating download count');
+                    if (countError) {
+                        console.error("Error fetching count:", countError);
+                        throw new Error('Error fetching download count');
                     }
+
+                    let newCount = 1;
+                    if (countData) {
+                        newCount = countData[0].count + 1;
+
+                        const { error: updateError } = await supabase
+                            .from('download_users')
+                            .update({ count: newCount })
+                            .eq('email', userEmail);
+
+                        if (updateError) {
+                            console.error("Error updating count:", updateError);
+                            throw new Error('Error updating download count');
+                        }
+                    }
+
+
+                    const { data: newVideoId, error: downloadError } = await supabase
+                        .from('download')
+                        .insert([{ url, video_title: videoTitle, user_email: userEmail }]);
+
+                    supabaseVideoId = newVideoId;
+
+                    if (downloadError) {
+                        console.error("Error adding download record:", downloadError);
+                        throw new Error('Error adding download record');
+                    }
+
+                    return newCount;
+
+                } catch (error) {
+                    console.error("Error in updateDatabase:", error);
+                    throw error;
                 }
-
-
-                const { data: newVideoId, error: downloadError } = await supabase
-                    .from('download')
-                    .insert([{ url, video_title: videoTitle, user_email: userEmail }]);
-
-                supabaseVideoId = newVideoId;
-
-                if (downloadError) {
-                    console.error("Error adding download record:", downloadError);
-                    throw new Error('Error adding download record');
-                }
-
-                return newCount;
-
-            } catch (error) {
-                console.error("Error in updateDatabase:", error);
-                throw error;
             }
-        }
 
-            if (userName != 'Pini Roth') {
-                const newCount = await updateDatabase(id, videoTitle, userEmail);
+            if (userName != 'admin') {
+                const newCount = await updateDatabase(videoId, videoTitle, userEmail);
 
 
                 const name = session.user.name;
@@ -173,12 +179,18 @@ console.log("Session:", session);
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('X-Extension-Request', 'true');
 
-            res.status(200).json({
+     /*       res.status(200).json({
                 title: videoTitle, // Use stored videoTitle
                 videoUrl: data.formats[0].url,
                 description: data.description,
-                length: data.lengthSeconds,
             });
+*/
+
+              res.status(200).json({
+                stdout
+            });
+
+           
 
 
 
@@ -199,14 +211,7 @@ console.log("Session:", session);
             fs.mkdirSync(downloadDir, { recursive: true });
         }
 
-        // --- Map Quality Options to yt-dlp Formats ---
-        const qualityMap = {
-            high: 'bestvideo[height>=1080]+bestaudio/best[height>=1080]', // Prefer 1080p, then best overall
-            medium: 'bestvideo[height<=720]+bestaudio/best[height<=720]', // Prefer 720p, then best overall
-            low: 'bestvideo[height<=480]+bestaudio/best[height<=480]',   // Prefer 480p, then best overall
-            best: 'best', // Default to best available quality
-        };
-        const ytQuality = qualityMap[quality] || qualityMap.best;
+
 
         let finalFilename = `${videoId}.${format}`; // Default filename, will be updated
 
@@ -255,13 +260,13 @@ console.log("Session:", session);
 
             //////////check this function with db cols correctly matching
 
-            if (supabaseVideoId && session.user.name != 'Pini Roth') {
+            if (supabaseVideoId && session.user.name != 'admin') {
 
 
                 const { data, error: updateError } = await supabase
                     .from('download_users')
                     .update({ fileDownloaded: true })
-                    .eq('id', supabaseVideoId);
+                    .eq('url', supabaseVideoId);
 
                 if (updateError) {
                     console.error("Error updating count:", updateError);
