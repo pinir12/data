@@ -31,7 +31,8 @@ export default function Page() {
         setData(null); // Clear previous video data
 
         try {
-            const response = await fetch(`/api/yt?id=${videoId}&type=url`);
+            const response = await fetch(`/api/yt?videoId=${encodeURIComponent(videoId)}&type=url`);
+
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -41,9 +42,9 @@ export default function Page() {
             const videoData = await response.json();
             setData(videoData);
 
-          //  if (videoData && videoData.videoUrl) {
-          //      setUrlToOpen(videoData.videoUrl); // Set URL to open in new tab
-          //  }
+            //  if (videoData && videoData.videoUrl) {
+            //      setUrlToOpen(videoData.videoUrl); // Set URL to open in new tab
+            //  }
 
         } catch (error) {
             console.error("Error fetching video data:", error);
@@ -110,14 +111,14 @@ export default function Page() {
         }
     };
 
-  /* //remove open new tab, replace with button  // Effect to open video URL in a new tab when urlToOpen state changes (only for fetchVideoData)
-    useEffect(() => {
-        if (urlToOpen) {
-            window.open(urlToOpen, '_blank');
-            setUrlToOpen(null); // Reset the URL to avoid opening it repeatedly
-        }
-    }, [urlToOpen]);
-    */
+    /* //remove open new tab, replace with button  // Effect to open video URL in a new tab when urlToOpen state changes (only for fetchVideoData)
+      useEffect(() => {
+          if (urlToOpen) {
+              window.open(urlToOpen, '_blank');
+              setUrlToOpen(null); // Reset the URL to avoid opening it repeatedly
+          }
+      }, [urlToOpen]);
+      */
 
     // Handles Enter key press in the input field
     const handleKeyDown = (event) => {
@@ -134,7 +135,7 @@ export default function Page() {
         // setDownloadProgress({ status: 'idle', percentage: 0, message: '' }); // REMOVED
 
         let videoId = null;
-        let urlString = url || inputUrl;
+        let urlString = url.toString() || inputUrl.toString();
 
         // Extract video ID from YouTube URL or directly use as ID
         if (urlString.includes("youtube.com") || urlString.includes("youtu.be")) {
@@ -296,18 +297,18 @@ export default function Page() {
                     {data && data.videoUrl && data.videoUrl.length > 1 && (
                         <div className="flex flex-col justify-center items-center text-center relative w-full border border-slate-200  max-w-xl bg-white p-6 rounded-lg shadow-lg">
                             <span className="cursor-pointer pb-4 text-lg font-semibold text-gray-800">
-                                {data.title}
+                                {data.title} ----COPY
                             </span>
 
-                            <div>
-                             <span className="text-gray-500 text-sm">Tip - Right click/long press on the Save Video button to save directly without opening in a new tab</span>   
-                    <a target="_blank" href={data.videoUrl}>
-                        <div className="px-3 py-1 rounded cursor-pointer bg-green-500 hover:bg-green-400 text-white">
-                            Save video
-                        </div>
-                    </a>
-
-                    </div>
+                            <div className="flex flex-col items-center justify-center mb-8 space-y-1 w-full">
+                               
+                                <a target="_blank" href={data.videoUrl}>
+                                    <div className="px-3 py-1 w-32 rounded cursor-pointer bg-blue-500 hover:bg-blue-400 text-white">
+                                        Save video
+                                    </div>
+                                </a>
+ <span className="text-gray-500 text-sm">Tip: Right click or long press on the Save Video button, and select 'Save linked file' to save directly without opening in a new tab. Use the copy button above to copy the video file name.</span>
+                            </div>
 
                             <section className="bg-gray-100 flex justify-center flex-col items-center p-6 rounded-lg shadow-md w-full">
                                 <h2 className="text-xl font-bold mb-4 text-gray-900">Download didn't work?</h2>

@@ -9,7 +9,7 @@ export default function App({ Component, pageProps: { ...pageProps }, router }) 
     <>
       <Head>
         <link rel="icon" type="image/x-icon" href="/assets/favicon.png" />
-        <meta charset="UTF-8" />
+        <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <SessionProvider>

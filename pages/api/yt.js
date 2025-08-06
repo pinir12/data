@@ -17,19 +17,26 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const session = await getServerSession(req, res);
 
-const userEmail = session.user.email;
-const userRole = session.user.role;
-const id = req.query.id;
 
-let supabaseVideoId;
 
 const execPromise = promisify(exec);
 
 export default async function handler(req, res) {
-    const { videoId, quality = 'best', format = 'mp4', method } = req.query;
+    const { videoId, quality = 'best', format = 'mp4', type } = req.query;
+
+console.log("Request Query:", req.query); // Log the request query for debugging
+
     const cookies_path = "/home/ubuntu/cookies.txt"; // Path to your cookies file
+
+    const session = await getServerSession(req, res);
+
+console.log("Session:", session);   
+    const userEmail = session.user.email;
+    const userName = session.user.name;
+    const id = req.query.id;
+
+    let supabaseVideoId;
 
     // --- Authentication Check ---
     if (!session) {
@@ -41,13 +48,13 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing videoId parameter' });
     }
 
-    if (method = "url") {
+    if (type == "url") {
 
-        if (userRole != 'admin') {
+        if (userName != 'Pini Roth') {
             try {
                 const { data: isActive, error: isActiveError } = await supabase
                     .from('download_users')
-                    .select('isActive')
+                    .select('is_active')
                     .eq('email', userEmail);
 
                 if (!isActive) {
@@ -70,7 +77,7 @@ export default async function handler(req, res) {
 
 
         try {
-            const response = await fetch(`https://ytstream-download-youtube-videos.p.rapidapi.com/dl?id=${id}`, {
+            const response = await fetch(`https://ytstream-download-youtube-videos.p.rapidapi.com/dl?id=${videoId}`, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
@@ -87,53 +94,13 @@ export default async function handler(req, res) {
             }
 
             const data = await response.json();
+            console.log("--------------------------------Data from API:", data); // Log the data for debugging
             const videoTitle = data.title;
             const thumbnailUrl = data.thumbnail[1]?.url;
 
-            if (userRole != 'admin') {
-                const newCount = await updateDatabase(id, videoTitle, userEmail);
 
 
-                const name = session.user.name;
-                const firstName = name.split(" ")[0];
-
-                const resend = new Resend(process.env.RESEND_API_KEY);
-                await resend.emails.send({
-                    from: 'PiniR <mail@pinir.co.uk>',
-                    to: [session.user.email],
-                    subject: `Video Download Notification - ${videoTitle}`, // Use stored videoTitle
-                    react: videoDownloaded({ title: videoTitle, name: firstName, count: newCount, thumbnailUrl: thumbnailUrl }), // Use stored videoTitle
-                });
-
-                await resend.emails.send({
-                    from: 'Downloads <mail@pinir.co.uk>',
-                    to: ['mail@pinir.co.uk'],
-                    subject: `Video download by ${name} (${newCount})`,
-                    react: admin({ title: videoTitle, name: name, count: newCount }),
-                });
-            }
-
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('X-Extension-Request', 'true');
-
-            res.status(200).json({
-                title: videoTitle, // Use stored videoTitle
-                videoUrl: data.formats[0].url,
-                description: data.description,
-                length: data.lengthSeconds,
-            });
-
-
-
-
-
-        } catch (error) {
-            console.error("Error:", error); // Simplified error message
-            res.status(500).json({ error: error.message });
-        }
-
-
-        const updateDatabase = async (url, videoTitle, userEmail) => {
+                    const updateDatabase = async (url, videoTitle, userEmail) => {
             try {
                 const { data: countData, error: countError } = await supabase
                     .from('download_users')
@@ -179,7 +146,52 @@ export default async function handler(req, res) {
                 throw error;
             }
         }
-    } else if (method = 'file') {
+
+            if (userName != 'Pini Roth') {
+                const newCount = await updateDatabase(id, videoTitle, userEmail);
+
+
+                const name = session.user.name;
+                const firstName = name.split(" ")[0];
+
+                const resend = new Resend(process.env.RESEND_API_KEY);
+                await resend.emails.send({
+                    from: 'PiniR <mail@pinir.co.uk>',
+                    to: [session.user.email],
+                    subject: `Video Download Notification - ${videoTitle}`, // Use stored videoTitle
+                    react: videoDownloaded({ title: videoTitle, name: firstName, count: newCount, thumbnailUrl: thumbnailUrl }), // Use stored videoTitle
+                });
+
+                await resend.emails.send({
+                    from: 'Downloads <mail@pinir.co.uk>',
+                    to: ['mail@pinir.co.uk'],
+                    subject: `Video download by ${name} (${newCount})`,
+                    react: admin({ title: videoTitle, name: name, count: newCount }),
+                });
+            }
+
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('X-Extension-Request', 'true');
+
+            res.status(200).json({
+                title: videoTitle, // Use stored videoTitle
+                videoUrl: data.formats[0].url,
+                description: data.description,
+                length: data.lengthSeconds,
+            });
+
+
+
+
+
+        } catch (error) {
+            console.error("Error:", error); // Simplified error message
+            res.status(500).json({ error: error.message });
+        }
+
+
+
+    } else if (type == 'file') {
 
         // --- Prepare Download Directory ---
         const downloadDir = '/tmp/yt'; // Temporary directory for downloads
@@ -243,7 +255,7 @@ export default async function handler(req, res) {
 
             //////////check this function with db cols correctly matching
 
-            if (supabaseVideoId && session.user.role != 'admin') {
+            if (supabaseVideoId && session.user.name != 'Pini Roth') {
 
 
                 const { data, error: updateError } = await supabase
@@ -289,6 +301,6 @@ export default async function handler(req, res) {
             res.status(500).json({ error: errorMessage });
         }
     } else {
-         return res.status(400).json({ error: 'Missing request type' });
+        return res.status(400).json({ error: 'Missing request type' });
     }
 }
