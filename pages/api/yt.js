@@ -11,7 +11,7 @@ import { admin } from "../../Components/EmailTemplates/admin";
 //add is active and file downloaded to db, get new video id when added from url function to pass to file to update
 
 //if possible to get url directly from ytdlp, scrap rapidapi and consolidate all further
-
+// need to try wth reg account and get db running properly - inc return video id for update
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
