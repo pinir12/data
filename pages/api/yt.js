@@ -61,7 +61,7 @@ export default async function handler(req, res) {
     }
 
     //check if user active
-    if (userName != 'admin') {
+    if (userName != 'Pini Roth') {
         try {
             const { data: isActive, error: isActiveError } = await supabase
                 .from('download_users')
@@ -179,7 +179,7 @@ export default async function handler(req, res) {
             const videoTitle = titleStdout.trim();
             const videoUrl = urlStdout.trim();
 
-            if (userName != 'admin') {
+            if (userName != 'Pini Roth') {
                 const newCount = await updateDatabase(videoUrl, videoTitle, userEmail);
                 sendEmails(videoTitle, videoUrl)
             }
