@@ -7,19 +7,17 @@ import { createClient } from "@supabase/supabase-js";
 import { Resend } from 'resend';
 import { videoDownloaded } from "../../Components/EmailTemplates/videoDownloaded";
 import { admin } from "../../Components/EmailTemplates/admin";
-import { url } from 'inspector';
-
-//add file downloaded to db, get new video id when added from url function to pass to file to update
-// ensure id col is changed to videoId. or video_id and update here accordingly in all supabase functions
-
-//if possible to get url directly from ytdlp, scrap rapidapi and consolidate all further
-//but also get title. rename me to admin. format res stdout for url
 
 
-// need to try wth reg account and get db running properly - inc return video id for update
+//add file_downloaded to db, get new video id when added from url function to pass to file to update
 
+//////need to merge into single function and split output to seperate variables, add also thumnail url to pass to email
 
 //implement ui to update cookies
+
+
+//check for not active user functions 401 correctly
+
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -32,8 +30,6 @@ export default async function handler(req, res) {
     const { videoId, quality = 'best', format = 'mp4', type } = req.query;
 
     const cookies_path = "/home/ubuntu/cookies.txt"; // Path to cookies file
-
-    let supabaseVideoId;
 
     const session = await getServerSession(req, res);
     const userEmail = session.user.email;
@@ -91,8 +87,44 @@ export default async function handler(req, res) {
 
     if (type == "url") {
 
-        //function calledto send emails
-        const sendEmails = async (videoTitle, videoUrl) => {
+
+        let newCount;
+        const getNewCount = async () => {
+            try {
+                const { data: countData, error: countError } = await supabase
+                    .from('download_users')
+                    .select('count', { count: 'exact' })
+                    .eq('email', userEmail);
+
+                if (countError) {
+                    console.error("Error fetching count:", countError);
+                    throw new Error('Error fetching download count');
+                }
+
+
+                if (countData) {
+                    newCount = countData[0].count + 1;
+
+                    const { error: updateError } = await supabase
+                        .from('download_users')
+                        .update({ count: newCount })
+                        .eq('email', userEmail);
+
+                    if (updateError) {
+                        console.error("Error updating count:", updateError);
+                        throw new Error('Error updating download count');
+                    }
+                }
+            } catch (error) {
+                console.error("Error in updateDatabase:", error);
+                throw error;
+            }
+        }
+
+
+
+        //function called to send emails
+        const sendEmails = async (videoTitle) => {
             const name = session.user.name;
             const firstName = name.split(" ")[0];
 
@@ -114,54 +146,22 @@ export default async function handler(req, res) {
 
         //function called to update and insert record to supabase
         const updateDatabase = async (url, videoTitle, userEmail) => {
-            try {
-                const { data: countData, error: countError } = await supabase
-                    .from('download_users')
-                    .select('count', { count: 'exact' })
-                    .eq('email', userEmail);
 
-                if (countError) {
-                    console.error("Error fetching count:", countError);
-                    throw new Error('Error fetching download count');
-                }
-
-                newCount = 1;
-                if (countData) {
-                    newCount = countData[0].count + 1;
-
-                    const { error: updateError } = await supabase
-                        .from('download_users')
-                        .update({ count: newCount })
-                        .eq('email', userEmail);
-
-                    if (updateError) {
-                        console.error("Error updating count:", updateError);
-                        throw new Error('Error updating download count');
-                    }
-                }
+            const { data: newVideoId, error: downloadError } = await supabase
+                .from('download')
+                .insert([{ url, video_title: videoTitle, user_email: userEmail }]);
 
 
-                const { data: newVideoId, error: downloadError } = await supabase
-                    .from('download')
-                    .insert([{ url, video_title: videoTitle, user_email: userEmail }]);
-
-                supabaseVideoId = newVideoId;
-
-                if (downloadError) {
-                    console.error("Error adding download record:", downloadError);
-                    throw new Error('Error adding download record');
-                }
-
-                return newCount;
-
-            } catch (error) {
-                console.error("Error in updateDatabase:", error);
-                throw error;
+            if (downloadError) {
+                console.error("Error adding download record:", downloadError);
+                throw new Error('Error adding download record');
             }
+
         }
 
+
         try {
-            //////need to set all variables eg video title urls etc for 2 functions to access. make avail or as props?
+            //////need to merge into single function and split output to seperate variables
 
             // --- Step 1: Get the actual video title and extension for the filename ---
             // This command outputs the desired filename format (title.ext) to stdout
@@ -177,13 +177,13 @@ export default async function handler(req, res) {
             if (urlStderr) console.error('URL command stderr:', urlStderr);
 
             const videoTitle = titleStdout.trim();
-            const videoUrl = urlStdout.trim();
+            const videoDirectUrl = urlStdout.trim();
 
-            let newCount;
 
             if (userName != 'Pini Roth') {
-                const newCount = await updateDatabase(videoUrl, videoTitle, userEmail);
-                sendEmails(videoTitle, videoUrl)
+                await getNewCount();
+                await updateDatabase(videoId, videoTitle, userEmail);
+                await sendEmails(videoTitle)
             }
 
             res.setHeader('Access-Control-Allow-Origin', '*');
@@ -191,7 +191,7 @@ export default async function handler(req, res) {
 
             res.status(200).json({
                 title: videoTitle,
-                url: videoUrl,
+                url: videoDirectUrl,
             });
 
         } catch (error) {
@@ -258,13 +258,13 @@ export default async function handler(req, res) {
 
             //////////check this function with db cols correctly matching
 
-            if (supabaseVideoId && session.user.name != 'admin') {
+            if (videoId && session.user.name != 'Pini Roth') {
 
 
                 const { data, error: updateError } = await supabase
                     .from('download_users')
-                    .update({ fileDownloaded: true })
-                    .eq('url', supabaseVideoId);
+                    .update({ file_downloaded: true })
+                    .eq('url', videoId);
 
                 if (updateError) {
                     console.error("Error updating count:", updateError);
