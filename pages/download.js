@@ -298,7 +298,7 @@ export default function Page() {
                    
 
                     {/* Video Data and Download Section */}
-                    {data && data.videoUrl && data.videoUrl.length > 1 && (
+                    {data && data.url && data.url.length > 1 && (
                         <div className="flex flex-col justify-center items-center text-center relative w-full border border-slate-200  max-w-xl bg-white p-6 rounded-lg shadow-lg">
                             <span className="cursor-pointer pb-4 text-lg font-semibold text-gray-800">
                                 {data.title} ----COPY
@@ -306,7 +306,7 @@ export default function Page() {
 
                             <div className="flex flex-col items-center justify-center mb-8 space-y-1 w-full">
 
-                                <a target="_blank" href={data.videoUrl}>
+                                <a target="_blank" href={data.url}>
                                     <div className="px-3 py-1 w-32 rounded cursor-pointer bg-blue-500 hover:bg-blue-400 text-white">
                                         Save video
                                     </div>
