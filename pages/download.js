@@ -59,7 +59,7 @@ export default function Page() {
     const startDownload = async () => {
         setErrorMessage(""); // Clear previous errors
         // Set download progress to preparing state
-        setDownloadProgress({ status: 'preparing', percentage: 0, message: 'Preparing download on server...' });
+        setDownloadProgress({ status: 'preparing', percentage: 0, message: 'Preparing file for download...' });
         setDownloadButtonLoading(true); // Show spinner on the "Start Download" button
 
         try {
@@ -74,7 +74,7 @@ export default function Page() {
             }
 
             // Update progress message as the blob starts transferring to the browser
-            setDownloadProgress({ status: 'downloading-blob', percentage: 100, message: 'Transferring to your browser...' });
+            setDownloadProgress({ status: 'downloading-blob', percentage: 50, message: 'Downloading video file...' });
 
             const blob = await res.blob(); // Wait for the entire file blob to be received
 
@@ -99,7 +99,7 @@ export default function Page() {
             a.remove(); // Clean up the temporary link element
             window.URL.revokeObjectURL(url); // Release the temporary URL
 
-            setDownloadProgress({ status: 'complete', percentage: 100, message: 'Download initiated! Check your downloads.' });
+            setDownloadProgress({ status: 'complete', percentage: 100, message: 'File downloaded! Check your downloads folder.' });
 
         } catch (err) {
             console.error("Download error:", err);

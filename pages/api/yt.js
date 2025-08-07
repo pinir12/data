@@ -92,7 +92,7 @@ export default async function handler(req, res) {
     if (type == "url") {
 
         //function calledto send emails
-        const sendEmails = async () => {
+        const sendEmails = async (videoTitle, videoUrl) => {
             const name = session.user.name;
             const firstName = name.split(" ")[0];
 
@@ -101,7 +101,7 @@ export default async function handler(req, res) {
                 from: 'PiniR <mail@pinir.co.uk>',
                 to: [session.user.email],
                 subject: `Video Download Notification - ${videoTitle}`, // Use stored videoTitle
-                react: videoDownloaded({ title: videoTitle, name: firstName, count: newCount, thumbnailUrl: thumbnailUrl }), // Use stored videoTitle
+                react: videoDownloaded({ title: videoTitle, name: firstName, count: newCount, thumbnailUrl: 'thumbnailUrl' }), // Use stored videoTitle
             });
 
             await resend.emails.send({
@@ -125,7 +125,7 @@ export default async function handler(req, res) {
                     throw new Error('Error fetching download count');
                 }
 
-                let newCount = 1;
+                newCount = 1;
                 if (countData) {
                     newCount = countData[0].count + 1;
 
@@ -178,6 +178,8 @@ export default async function handler(req, res) {
 
             const videoTitle = titleStdout.trim();
             const videoUrl = urlStdout.trim();
+
+            let newCount;
 
             if (userName != 'Pini Roth') {
                 const newCount = await updateDatabase(videoUrl, videoTitle, userEmail);
