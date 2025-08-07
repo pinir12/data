@@ -60,7 +60,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing video URL/ID' });
     }
 
-//check if user active
+    //check if user active
     if (userName != 'admin') {
         try {
             const { data: isActive, error: isActiveError } = await supabase
@@ -172,8 +172,7 @@ export default async function handler(req, res) {
             console.log('URL command stdout:', urlStdout);
             if (urlStderr) console.error('URL command stderr:', urlStderr);
 
-              const [videoTitle, videoUrl] = urlStdout.trim().split(': ');
-
+            const [videoTitle, videoUrl] = urlStdout.trim().split('\n');
 
 
             if (userName != 'admin') {
@@ -192,8 +191,8 @@ export default async function handler(req, res) {
        */
 
             res.status(200).json({
-               title: videoTitle,
-               url: videoUrl,
+                title: videoTitle,
+                url: videoUrl,
             });
 
         } catch (error) {
