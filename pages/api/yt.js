@@ -165,36 +165,33 @@ export default async function handler(req, res) {
 
             // --- Step 1: Get the actual video title and extension for the filename ---
             // This command outputs the desired filename format (title.ext) to stdout
-            const urlCmd = `yt-dlp --cookies "${cookies_path}"  --get-url --get-title "${videoId}"`;
-            console.log(`Running url command: ${urlCmd}`);
+            const titleCmd = `yt-dlp --cookies "${cookies_path}"  --get-title "${videoId}"`;
+            const urlCmd = `yt-dlp --cookies "${cookies_path}"  --get-url "${videoId}"`;
+
+            const { stdout: titleStdout, stderr: titleStderr } = await execPromise(titleCmd);
+            console.log('Title command stdout:', titleStdout);
+            if (titleStderr) console.error('Title command stderr:', titleStderr);
 
             const { stdout: urlStdout, stderr: urlStderr } = await execPromise(urlCmd);
             console.log('URL command stdout:', urlStdout);
             if (urlStderr) console.error('URL command stderr:', urlStderr);
 
-            const [videoTitle, videoUrl] = urlStdout.trim().split('\n');
-
+            const videoTitle = titleStdout.trim();
+            const videoUrl = urlStdout.trim();
 
             if (userName != 'admin') {
                 const newCount = await updateDatabase(videoUrl, videoTitle, userEmail);
-                sendEmails()
+                sendEmails(videoTitle, videoUrl)
             }
 
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('X-Extension-Request', 'true');
 
-            /*       res.status(200).json({
-                       title: videoTitle, // Use stored videoTitle
-                       videoUrl: data.formats[0].url,
-                       description: data.description,
-                   });
-       */
-
             res.status(200).json({
                 title: videoTitle,
                 url: videoUrl,
             });
-
+            
         } catch (error) {
             console.error("Error:", error); // Simplified error message
             res.status(500).json({ error: error.message });
