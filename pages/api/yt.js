@@ -176,7 +176,7 @@ export default async function handler(req, res) {
             console.log('URL command stdout:', urlStdout);
             if (urlStderr) console.error('URL command stderr:', urlStderr);
 
-            const videoTitle = titleStdout.split('\n')[0].trim();
+            const videoTitle = titleStdout.trim();
             const videoUrl = urlStdout.trim();
 
             if (userName != 'admin') {
