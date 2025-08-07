@@ -165,7 +165,7 @@ export default async function handler(req, res) {
 
             // --- Step 1: Get the actual video title and extension for the filename ---
             // This command outputs the desired filename format (title.ext) to stdout
-            const urlCmd = `yt-dlp --cookies "${cookies_path}"  --get-url --get-title -output "%(title)s: %(url)s" "${videoId}"`;
+            const urlCmd = `yt-dlp --cookies "${cookies_path}"  --get-url --get-title "${videoId}"`;
             console.log(`Running url command: ${urlCmd}`);
 
             const { stdout: urlStdout, stderr: urlStderr } = await execPromise(urlCmd);
