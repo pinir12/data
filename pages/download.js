@@ -211,7 +211,7 @@ export default function Page() {
                 <Head>
                     <title>Download</title>
                 </Head>
-                <div className="w-full h-screen flex flex-col items-center"
+                <div className="w-full min-h-screen flex flex-col items-center justify-start"
                     onDrop={handleDrop}
                     onDragOver={(e) => e.preventDefault()}
                 >
@@ -299,24 +299,24 @@ export default function Page() {
 
                     {/* Video Data and Download Section */}
                     {data && data.url && data.url.length > 1 && (
-                        <div className="flex flex-col justify-center items-center text-center relative w-full border border-slate-200  max-w-xl bg-white p-6 rounded-lg shadow-lg">
-                            <span className="cursor-pointer pb-4 text-lg font-semibold text-gray-800">
+                        <div className="flex flex-col justify-center items-center text-center relative w-full border border-slate-200  max-w-xl bg-white p-6 mb-6 rounded-lg shadow-lg">
+                            <span className="text-lg font-semibold text-gray-800">
                                 {data.title} ----COPY
                             </span>
 
                             <div className="flex flex-col items-center justify-center mb-8 space-y-1 w-full">
 
                                 <a target="_blank" href={data.url}>
-                                    <div className="px-3 py-1 w-32 rounded cursor-pointer bg-blue-500 hover:bg-blue-400 text-white">
+                                    <div className=" w-[166px] bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 mb-2 px-6 rounded-lg mt-6 shadow-md transition duration-200 ease-in-out">
                                         Save video
                                     </div>
                                 </a>
-                                <span className="text-gray-500 text-sm">Tip: Right click or long press on the Save Video button, and select 'Save linked file' to save directly without opening in a new tab. Use the copy button above to copy the video file name.</span>
+                                <span className="text-gray-500 text-sm">Right click and select 'Save linked file' to save directly without opening video. Copy the title using the button above.</span>
                             </div>
 
                             <section className="bg-gray-100 flex justify-center flex-col items-center p-6 rounded-lg shadow-md w-full">
                                 <h2 className="text-xl font-bold mb-4 text-gray-900">Download didn't work?</h2>
-                                <p className="text-md mb-6 text-gray-700">Try our full-featured option to download your video in high quality.</p>
+                                <p className="text-md mb-6 text-gray-700">Try our full-featured option to download your video directly.</p>
                                 <form className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
                                     <label className="text-md font-medium text-gray-800" htmlFor="quality">Select quality:</label>
                                     <select
