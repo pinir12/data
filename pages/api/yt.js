@@ -7,6 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Resend } from 'resend';
 import { videoDownloaded } from "../../Components/EmailTemplates/videoDownloaded";
 import { admin } from "../../Components/EmailTemplates/admin";
+import { url } from 'inspector';
 
 //add file downloaded to db, get new video id when added from url function to pass to file to update
 // ensure id col is changed to videoId. or video_id and update here accordingly in all supabase functions
@@ -32,6 +33,8 @@ export default async function handler(req, res) {
 
     const cookies_path = "/home/ubuntu/cookies.txt"; // Path to cookies file
 
+    let supabaseVideoId;
+
     const session = await getServerSession(req, res);
     const userEmail = session.user.email;
     const userName = session.user.name;
@@ -45,21 +48,20 @@ export default async function handler(req, res) {
     };
     const ytQuality = qualityMap[quality] || qualityMap.best;
 
-    let supabaseVideoId;
 
     // --- Authentication Check ---
     if (!session) {
-        console.log( 'error: Unauthorized' )
+        console.log('error: Unauthorized')
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
     // --- Input Validation ---
     if (!videoId) {
-        return res.status(400).json({ error: 'Missing videoId parameter' });
+        return res.status(400).json({ error: 'Missing video URL/ID' });
     }
 
-
-    if (userName != 'Pini Roth') {
+//check if user active
+    if (userName != 'admin') {
         try {
             const { data: isActive, error: isActiveError } = await supabase
                 .from('download_users')
@@ -67,23 +69,21 @@ export default async function handler(req, res) {
                 .eq('email', userEmail);
 
             if (!isActive) {
-                 console.log( "error: User not active" )
+                console.log("error: User not active")
                 return res.status(401).json({ error: "User not active" });
             }
 
             if (isActiveError) {
-                console.error("Error fetching fetching user active status:", isActiveError);
-                throw new Error('Error fetching fetching user active status');
+                console.error("Error fetching fetching user status:", isActiveError);
+                throw new Error('Error fetching fetching user status');
             }
         }
         catch (error) {
-            console.error('yt-dlp or file operation error:', err);
+            console.error('Error:', error);
             // Provide more detailed error message if available
-            const errorMessage = err.message || 'An unknown error occurred during download.';
+            const errorMessage = error.message;
             res.status(500).json({ error: errorMessage });
         }
-
-
     }
 
 
@@ -91,7 +91,77 @@ export default async function handler(req, res) {
 
     if (type == "url") {
 
+        //function calledto send emails
+        const sendEmails = async () => {
+            const name = session.user.name;
+            const firstName = name.split(" ")[0];
+
+            const resend = new Resend(process.env.RESEND_API_KEY);
+            await resend.emails.send({
+                from: 'PiniR <mail@pinir.co.uk>',
+                to: [session.user.email],
+                subject: `Video Download Notification - ${videoTitle}`, // Use stored videoTitle
+                react: videoDownloaded({ title: videoTitle, name: firstName, count: newCount, thumbnailUrl: thumbnailUrl }), // Use stored videoTitle
+            });
+
+            await resend.emails.send({
+                from: 'Downloads <mail@pinir.co.uk>',
+                to: ['mail@pinir.co.uk'],
+                subject: `Video download by ${name} (${newCount})`,
+                react: admin({ title: videoTitle, name: name, count: newCount }),
+            });
+        }
+
+        //function called to update and insert record to supabase
+        const updateDatabase = async (url, videoTitle, userEmail) => {
+            try {
+                const { data: countData, error: countError } = await supabase
+                    .from('download_users')
+                    .select('count', { count: 'exact' })
+                    .eq('email', userEmail);
+
+                if (countError) {
+                    console.error("Error fetching count:", countError);
+                    throw new Error('Error fetching download count');
+                }
+
+                let newCount = 1;
+                if (countData) {
+                    newCount = countData[0].count + 1;
+
+                    const { error: updateError } = await supabase
+                        .from('download_users')
+                        .update({ count: newCount })
+                        .eq('email', userEmail);
+
+                    if (updateError) {
+                        console.error("Error updating count:", updateError);
+                        throw new Error('Error updating download count');
+                    }
+                }
+
+
+                const { data: newVideoId, error: downloadError } = await supabase
+                    .from('download')
+                    .insert([{ url, video_title: videoTitle, user_email: userEmail }]);
+
+                supabaseVideoId = newVideoId;
+
+                if (downloadError) {
+                    console.error("Error adding download record:", downloadError);
+                    throw new Error('Error adding download record');
+                }
+
+                return newCount;
+
+            } catch (error) {
+                console.error("Error in updateDatabase:", error);
+                throw error;
+            }
+        }
+
         try {
+            //////need to set all variables eg video title urls etc for 2 functions to access. make avail or as props?
 
             // --- Step 1: Get the actual video title and extension for the filename ---
             // This command outputs the desired filename format (title.ext) to stdout
@@ -102,99 +172,29 @@ export default async function handler(req, res) {
             console.log('URL command stdout:', urlStdout);
             if (urlStderr) console.error('URL command stderr:', urlStderr);
 
+              const [videoTitle, videoUrl] = urlStdout.trim().split(': ');
 
 
-
-
-            const updateDatabase = async (url, videoTitle, userEmail) => {
-                try {
-                    const { data: countData, error: countError } = await supabase
-                        .from('download_users')
-                        .select('count', { count: 'exact' })
-                        .eq('email', userEmail);
-
-                    if (countError) {
-                        console.error("Error fetching count:", countError);
-                        throw new Error('Error fetching download count');
-                    }
-
-                    let newCount = 1;
-                    if (countData) {
-                        newCount = countData[0].count + 1;
-
-                        const { error: updateError } = await supabase
-                            .from('download_users')
-                            .update({ count: newCount })
-                            .eq('email', userEmail);
-
-                        if (updateError) {
-                            console.error("Error updating count:", updateError);
-                            throw new Error('Error updating download count');
-                        }
-                    }
-
-
-                    const { data: newVideoId, error: downloadError } = await supabase
-                        .from('download')
-                        .insert([{ url, video_title: videoTitle, user_email: userEmail }]);
-
-                    supabaseVideoId = newVideoId;
-
-                    if (downloadError) {
-                        console.error("Error adding download record:", downloadError);
-                        throw new Error('Error adding download record');
-                    }
-
-                    return newCount;
-
-                } catch (error) {
-                    console.error("Error in updateDatabase:", error);
-                    throw error;
-                }
-            }
 
             if (userName != 'admin') {
-                const newCount = await updateDatabase(videoId, videoTitle, userEmail);
-
-
-                const name = session.user.name;
-                const firstName = name.split(" ")[0];
-
-                const resend = new Resend(process.env.RESEND_API_KEY);
-                await resend.emails.send({
-                    from: 'PiniR <mail@pinir.co.uk>',
-                    to: [session.user.email],
-                    subject: `Video Download Notification - ${videoTitle}`, // Use stored videoTitle
-                    react: videoDownloaded({ title: videoTitle, name: firstName, count: newCount, thumbnailUrl: thumbnailUrl }), // Use stored videoTitle
-                });
-
-                await resend.emails.send({
-                    from: 'Downloads <mail@pinir.co.uk>',
-                    to: ['mail@pinir.co.uk'],
-                    subject: `Video download by ${name} (${newCount})`,
-                    react: admin({ title: videoTitle, name: name, count: newCount }),
-                });
+                const newCount = await updateDatabase(videoUrl, videoTitle, userEmail);
+                sendEmails()
             }
 
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('X-Extension-Request', 'true');
 
-     /*       res.status(200).json({
-                title: videoTitle, // Use stored videoTitle
-                videoUrl: data.formats[0].url,
-                description: data.description,
+            /*       res.status(200).json({
+                       title: videoTitle, // Use stored videoTitle
+                       videoUrl: data.formats[0].url,
+                       description: data.description,
+                   });
+       */
+
+            res.status(200).json({
+               title: videoTitle,
+               url: videoUrl,
             });
-*/
-
-              res.status(200).json({
-                stdout
-            });
-
-           
-
-
-
-
 
         } catch (error) {
             console.error("Error:", error); // Simplified error message
