@@ -24,6 +24,22 @@ export default function Page() {
         message: ''
     });
 
+
+
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const videoIdFromUrl = urlParams.get("id") ||  urlParams.get("url"); 
+
+        if (videoIdFromUrl) {
+            setId(videoIdFromUrl);
+            setInputUrl(videoIdFromUrl);
+            fetchVideoData(videoIdFromUrl);
+        }
+    }, []);
+
+
+
+
     // Fetches video metadata (title, description, etc.) and opens video URL
     const fetchVideoData = async (videoId) => {
         setButtonLoading(true); // Show spinner on the "Go" button
@@ -49,7 +65,7 @@ export default function Page() {
         } catch (error) {
             //console.error("Error fetching video data:", error);
             console.error(error);
-            setErrorMessage(`${error}`);
+            setErrorMessage(`Video download failed. Please try again later.`);
         } finally {
             setButtonLoading(false); // Hide spinner on the "Go" button
         }
@@ -287,15 +303,15 @@ export default function Page() {
                                 </svg>
                             </div>
                         </div>
-</div>
+                    </div>
 
-                        {/* Error Message Display */}
-                        <span className="h-8 text-red-500 text-left w-full max-w-xl px-1 text-xs my-2">
-                            {!data && errorMessage && <p className="">{errorMessage}</p>}
-                        </span>
+                    {/* Error Message Display */}
+                    <span className="h-8 text-red-500 text-center w-full max-w-xl px-1 text-xs my-2">
+                        {!data && errorMessage && <p className="">{errorMessage}</p>}
+                    </span>
 
 
-                   
+
 
                     {/* Video Data and Download Section */}
                     {data && data.url && data.url.length > 1 && (
