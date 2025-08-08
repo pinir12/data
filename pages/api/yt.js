@@ -15,8 +15,9 @@ import { admin } from "../../Components/EmailTemplates/admin";
 
 //implement ui to update cookies
 
-
+//copy from homepage url query to front end
 //check for not active user functions 401 correctly
+//download page check mobile ui, without and with data
 
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
