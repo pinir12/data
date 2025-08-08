@@ -9,7 +9,6 @@ import { videoDownloaded } from "../../Components/EmailTemplates/videoDownloaded
 import { admin } from "../../Components/EmailTemplates/admin";
 
 
-//add file_downloaded to db, get new video id when added from url function to pass to file to update
 
 //////need to merge into single function and split output to seperate variables, add also thumnail url to pass to email
 
@@ -125,7 +124,7 @@ export default async function handler(req, res) {
 
 
         //function called to send emails
-        const sendEmails = async (videoTitle) => {
+        const sendEmails = async (videoTitle, thumbnailUrl) => {
             const name = session.user.name;
             const firstName = name.split(" ")[0];
 
@@ -134,7 +133,7 @@ export default async function handler(req, res) {
                 from: 'PiniR <mail@pinir.co.uk>',
                 to: [session.user.email],
                 subject: `Video Download Notification - ${videoTitle}`, // Use stored videoTitle
-                react: videoDownloaded({ title: videoTitle, name: firstName, count: newCount, thumbnailUrl: 'thumbnailUrl' }), // Use stored videoTitle
+                react: videoDownloaded({ title: videoTitle, name: firstName, count: newCount, thumbnailUrl: thumbnailUrl }), // Use stored videoTitle
             });
 
             await resend.emails.send({
@@ -166,25 +165,27 @@ export default async function handler(req, res) {
 
             // --- Step 1: Get the actual video title and extension for the filename ---
             // This command outputs the desired filename format (title.ext) to stdout
-            const titleCmd = `yt-dlp --cookies "${cookies_path}"  --get-title "${videoId}"`;
-            const urlCmd = `yt-dlp --cookies "${cookies_path}"  --get-url "${videoId}"`;
+          
 
-            const { stdout: titleStdout, stderr: titleStderr } = await execPromise(titleCmd);
-            console.log('Title command stdout:', titleStdout);
-            if (titleStderr) console.error('Title command stderr:', titleStderr);
 
-            const { stdout: urlStdout, stderr: urlStderr } = await execPromise(urlCmd);
-            console.log('URL command stdout:', urlStdout);
-            if (urlStderr) console.error('URL command stderr:', urlStderr);
 
-            const videoTitle = titleStdout.trim();
-            const videoDirectUrl = urlStdout.trim();
+            const combinedCmd = `yt-dlp --cookies "${cookies_path}" --print "%(title)s||%(url)s||%(thumbnail)s" "${videoId}"`;
+
+            const { stdout, stderr } = await execPromise(combinedCmd);
+            if (stderr) console.error('yt-dlp stderr:', stderr);
+
+            // Split into variables
+            const [videoTitle, videoDirectUrl, videoThumbnail] = stdout.trim().split('||');
+
+            console.log('Title:', videoTitle);
+            console.log('Direct URL:', videoDirectUrl);
+            console.log('Thumbnail:', videoThumbnail);
 
 
             if (userName != 'Pini Roth') {
                 await getNewCount();
                 await updateDatabase(videoId, videoTitle, userEmail);
-                await sendEmails(videoTitle)
+                await sendEmails(videoTitle, videoThumbnail)
             }
 
             res.setHeader('Access-Control-Allow-Origin', '*');
