@@ -263,7 +263,7 @@ export default async function handler(req, res) {
 
 
                 const { data, error: updateError } = await supabase
-                    .from('download_users')
+                    .from('download')
                     .update({ file_downloaded: true })
                     .eq('url', videoId);
 
