@@ -11,11 +11,9 @@ import { admin } from "../../Components/EmailTemplates/admin";
 
 
 
-//merge file functions into 1 for file with output as title. not filename. see if can remove whole block. Then see next line.
-// undo change space for _ in video file download title - better, change from file name to title and maybe won't need all that cleaning block
 
 
-//check for not active user functions 401 correctly
+
 //download page check mobile ui, without and with data
 
 //finally create we have moved page in homepage, remove all dpendencies, pages and apis!
@@ -67,8 +65,6 @@ export default async function handler(req, res) {
                 .from('download_users')
                 .select('is_active')
                 .eq('email', userEmail);
-
-            console.log("isActive:", isActive);
 
             if (isActive[0].is_active == false) {
                 console.log("error: User not active")
@@ -234,7 +230,7 @@ export default async function handler(req, res) {
             if (finalFilename.length > 200) {
                 finalFilename = finalFilename.substring(0, 200) + '...';
             }
-            const headerSafeFilename = finalFilename.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const headerSafeFilename = finalFilename.replace(/[^a-zA-Z0-9 ._-]/g, '_');
 
             // --- Update Supabase if Needed ---
             if (videoId && session.user.name !== 'Pini Roth') {
