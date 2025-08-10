@@ -48,6 +48,7 @@ export default function Page() {
     const fetchVideoData = async (videoId) => {
         setButtonLoading(true); // Show spinner on the "Go" button
         setErrorMessage(""); // Clear previous errors
+        setTitleCopied(false); // Reset title copied state
         setData(null); // Clear previous video data
 
         try {
@@ -78,6 +79,7 @@ export default function Page() {
     // Handles the actual video file download process with progress
     const startDownload = async () => {
         setErrorMessage(""); // Clear previous errors
+        setTitleCopied(false); // Reset title copied state
         // Set download progress to preparing state
         setDownloadProgress({ status: 'preparing', percentage: 0, message: 'Preparing file for download...' });
         setDownloadButtonLoading(true); // Show spinner on the "Start Download" button
@@ -149,6 +151,7 @@ export default function Page() {
     // Processes the input URL or video ID (only triggers fetchVideoData)
     const handleGoClick = (url = null) => {
         setErrorMessage("");
+        setTitleCopied(false); // Reset title copied state
         setData(null);
         // Do NOT reset downloadProgress here, as it's separate for startDownload
         // setDownloadProgress({ status: 'idle', percentage: 0, message: '' }); // REMOVED
@@ -194,6 +197,7 @@ export default function Page() {
     const handleClear = () => {
         setInputUrl("");
         setErrorMessage("");
+        setTitleCopied(false)
         setData(null);
         // Reset downloadProgress when clearing everything
         setDownloadProgress({ status: 'idle', percentage: 0, message: '' });
