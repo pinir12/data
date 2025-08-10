@@ -11,11 +11,21 @@ import { admin } from "../../Components/EmailTemplates/admin";
 
 // add copy title button
 //check for thumnail url working correcly in email, its correct in system
+
+//merge file functions into 1 for file with output as title. not filename. see if can remove whole block. Then see next line.
 // undo change space for _ in video file download title - better, change from file name to title and maybe won't need all that cleaning block
 
+
+//check ?id and ?url
+//check cookies all good, and success error display
 //check cookies auth for reg user in both pages and api
 //check for not active user functions 401 correctly
 //download page check mobile ui, without and with data
+
+//finally create we have moved page in homepage, remove all dpendencies, pages and apis!
+
+
+//after everything see about adding proper job progress
 
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
