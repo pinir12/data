@@ -1,7 +1,8 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
-import path from 'path';
+import util from 'util';
+import { spawn } from 'child_process';
 import { getServerSession } from 'next-auth/next';
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from 'resend';
@@ -9,9 +10,6 @@ import { videoDownloaded } from "../../Components/EmailTemplates/videoDownloaded
 import { admin } from "../../Components/EmailTemplates/admin";
 
 
-// check copy title button. see if on new vieo load it resets.
-// Then npm unlink react-copy-to-clipboard on both projects and npm install react-copy-to-clipboard here and check
-//check for thumnail url working correcly in email, its correct in system
 
 //merge file functions into 1 for file with output as title. not filename. see if can remove whole block. Then see next line.
 // undo change space for _ in video file download title - better, change from file name to title and maybe won't need all that cleaning block
@@ -30,7 +28,6 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const execPromise = promisify(exec);
 
 export default async function handler(req, res) {
 
@@ -71,7 +68,7 @@ export default async function handler(req, res) {
                 .select('is_active')
                 .eq('email', userEmail);
 
-                console.log("isActive:", isActive);
+            console.log("isActive:", isActive);
 
             if (isActive[0].is_active == false) {
                 console.log("error: User not active")
@@ -95,6 +92,8 @@ export default async function handler(req, res) {
 
 
     if (type == "url") {
+
+        const execPromise = promisify(exec);
 
 
         let newCount;
@@ -207,61 +206,39 @@ export default async function handler(req, res) {
 
     } else if (type == 'file') {
 
-        // --- Prepare Download Directory ---
-        const downloadDir = '/tmp/yt'; // Temporary directory for downloads
+        const execPromise = util.promisify(exec);
+
+        const downloadDir = '/tmp/yt';
         if (!fs.existsSync(downloadDir)) {
             fs.mkdirSync(downloadDir, { recursive: true });
         }
 
-
-
-        let finalFilename = `${videoId}.${format}`; // Default filename, will be updated
-
         try {
-            // --- Step 1: Get the actual video title and extension for the filename ---
-            // This command outputs the desired filename format (title.ext) to stdout
-            const filenameCmd = `yt-dlp --cookies "${cookies_path}"  --get-filename -o "%(title)s.%(ext)s" "${videoId}"`;
-            console.log(`Running filename command: ${filenameCmd}`);
+            // --- Step 1: Get metadata only ---
+            const metaCmd = `yt-dlp --cookies "${cookies_path}" --print-json -f "${ytQuality}" "${videoId}"`;
+            console.log(`Running metadata command: ${metaCmd}`);
+            const { stdout: metaStdout, stderr: metaStderr } = await execPromise(metaCmd);
+            if (metaStderr) console.error('yt-dlp metadata stderr:', metaStderr);
 
-            const { stdout: filenameStdout, stderr: filenameStderr } = await execPromise(filenameCmd);
-            console.log('Filename command stdout:', filenameStdout);
-            if (filenameStderr) console.error('Filename command stderr:', filenameStderr);
-
-            if (filenameStdout) {
-                // Trim whitespace and newlines, then sanitize for valid filename characters
-                finalFilename = filenameStdout.trim();
-                // Replace characters that are invalid in filenames with underscores
-                finalFilename = finalFilename.replace(/[\\/:*?"<>|]/g, '_');
-                // Ensure it doesn't start or end with a dot or space (common issues)
-                finalFilename = finalFilename.replace(/^\.+|\.+$/g, '').replace(/^\s+|\s+$/g, '');
-                // Limit length if necessary (optional, but good practice for very long titles)
-                if (finalFilename.length > 200) {
-                    finalFilename = finalFilename.substring(0, 200) + '...';
-                }
+            let metadata;
+            try {
+                metadata = JSON.parse(metaStdout.trim().split('\n').pop());
+            } catch (err) {
+                console.error('Failed to parse yt-dlp JSON output:', err);
+                return res.status(500).json({ error: 'Could not parse yt-dlp output' });
             }
 
-            const outputFile = path.join(downloadDir, finalFilename); // Use the derived filename for the output path
-
-            // --- Step 2: Download the video using yt-dlp ---
-
-
-            const ytDlpCmd = `yt-dlp -f "${ytQuality}" --cookies "${cookies_path}" -o "${outputFile}" "${videoId}"`;
-            console.log(`Running download command: ${ytDlpCmd}`);
-
-            const { stdout, stderr } = await execPromise(ytDlpCmd); // Execute the download command
-            console.log('yt-dlp download stdout:', stdout);
-            if (stderr) console.error('yt-dlp download stderr:', stderr);
-
-            // --- Verify Downloaded File ---
-            if (!fs.existsSync(outputFile)) {
-                return res.status(500).json({ error: 'Downloaded file not found after yt-dlp run. Check yt-dlp output for errors.' });
+            // --- Build Safe Filename ---
+            let finalFilename = `${metadata.title}.${metadata.ext}`;
+            finalFilename = finalFilename.replace(/[\\/:*?"<>|]/g, '_').replace(/^\.+|\.+$/g, '').replace(/^\s+|\s+$/g, '');
+            if (finalFilename.length > 200) {
+                finalFilename = finalFilename.substring(0, 200) + '...';
             }
+            const headerSafeFilename = finalFilename.replace(/[^a-zA-Z0-9._-]/g, '_');
 
-
-            if (videoId && session.user.name != 'Pini Roth') {
-
-
-                const { data, error: updateError } = await supabase
+            // --- Update Supabase if Needed ---
+            if (videoId && session.user.name !== 'Pini Roth') {
+                const { error: updateError } = await supabase
                     .from('download')
                     .update({ file_downloaded: true })
                     .eq('url', videoId);
@@ -272,36 +249,40 @@ export default async function handler(req, res) {
                 }
             }
 
-            // --- Set Headers for File Download ---
-            const headerSafeFilename = finalFilename.replace(/[^a-zA-Z0-9._-]/g, '_'); // make ASCII-only fallback
+            // --- Step 2: Set response headers ---
             res.setHeader(
                 'Content-Disposition',
                 `attachment; filename="${headerSafeFilename}"; filename*=UTF-8''${encodeURIComponent(finalFilename)}`
             );
-            res.setHeader('Content-Type', `video/${format}`);
+            res.setHeader('Content-Type', `video/${metadata.ext}`);
 
-            // --- Stream File to Response ---
-            const fileStream = fs.createReadStream(outputFile);
-            fileStream.pipe(res); // Pipe the file stream directly to the HTTP response
+            // --- Step 3: Spawn yt-dlp for live streaming ---
+            const yt = spawn('yt-dlp', [
+                '-f', ytQuality,
+                '--cookies', cookies_path,
+                '-o', '-', // Output to stdout (stream)
+                videoId
+            ]);
 
-            // --- Cleanup Temporary File ---
-            fileStream.on('end', () => {
-                fs.unlink(outputFile, (err) => {
-                    if (err) console.error(`Error deleting temporary file ${outputFile}:`, err);
-                    else console.log(`Temporary file ${outputFile} deleted.`);
-                });
+            yt.stdout.pipe(res);
+
+            yt.stderr.on('data', (chunk) => {
+                console.error(`yt-dlp stderr: ${chunk}`);
             });
 
-            fileStream.on('error', err => {
-                console.error('File streaming error:', err);
-                res.status(500).json({ error: 'File streaming error' });
+            yt.on('error', (err) => {
+                console.error('yt-dlp process error:', err);
+                if (!res.headersSent) res.status(500).end();
             });
 
-        } catch (err) {
-            console.error('yt-dlp or file operation error:', err);
-            // Provide more detailed error message if available
-            const errorMessage = err.message || 'An unknown error occurred during download.';
-            res.status(500).json({ error: errorMessage });
+            yt.on('close', (code) => {
+                console.log(`yt-dlp finished with code ${code}`);
+                res.end();
+            });
+
+        } catch (error) {
+            console.error('Streaming process error:', error);
+            if (!res.headersSent) res.status(500).json({ error: 'Server error during streaming download' });
         }
     } else {
         return res.status(400).json({ error: 'Missing request type' });
