@@ -9,13 +9,27 @@ export default function CookiesPage() {
     const [error, setError] = useState(null);
     const [successMsg, setSuccessMsg] = useState('')
 
-    const loadFile = (showMessage = false) => {
-        fetch('/api/cookies')
-            .then((res) => res.json())
-            .then((data) => setContent(data.content))
-            .catch((err) => setError('Failed to load file content'));
+    const loadFile = async (showMessage = false) => {
+        setError('');
+        setSuccessMsg('');
+        try {
+            const res = await fetch('/api/cookies')
 
-        showMessage ? setSuccessMsg('File reloaded') : null;
+            if (!res.ok) {
+                throw new Error(`Failed to load file`);
+            }
+
+            const data = await res.json();
+
+
+            setContent(data.content)
+            showMessage ? setSuccessMsg('File reloaded') : null;
+
+        } catch (err) {
+            setError('Failed to load file');
+        }
+
+
     }
 
     useEffect(() => {
