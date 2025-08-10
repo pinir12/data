@@ -71,7 +71,9 @@ export default async function handler(req, res) {
                 .select('is_active')
                 .eq('email', userEmail);
 
-            if (!isActive) {
+                console.log("isActive:", isActive);
+
+            if (isActive[0].is_active == false) {
                 console.log("error: User not active")
                 return res.status(401).json({ error: "User not active" });
             }
