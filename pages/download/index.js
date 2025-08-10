@@ -3,6 +3,7 @@ import Spinner from "../../Components/Spinner"
 import SignIn from "../../Components/SignIn";
 import { signOut, useSession } from 'next-auth/react';
 import Head from "next/head";
+import CopyToClipboard from "react-copy-to-clipboard";
 
 export default function Page() {
     const { data: session } = useSession();
@@ -14,7 +15,10 @@ export default function Page() {
     // New state for the 'Start Download' button's spinner
     const [downloadButtonLoading, setDownloadButtonLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
-    const [data, setData] = useState(null); // Stores video metadata from initial fetch
+    const [data, setData] = useState(''); // Stores video metadata from initial fetch
+    const [titleCopied, setTitleCopied] = useState(false);
+
+
     // const [urlToOpen, setUrlToOpen] = useState(""); // For opening video URL in new tab
 
     // State for download progress display (only for startDownload function)
@@ -28,7 +32,7 @@ export default function Page() {
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
-        const videoIdFromUrl = urlParams.get("id") ||  urlParams.get("url"); 
+        const videoIdFromUrl = urlParams.get("id") || urlParams.get("url");
 
         if (videoIdFromUrl) {
             setId(videoIdFromUrl);
@@ -316,8 +320,49 @@ export default function Page() {
                     {/* Video Data and Download Section */}
                     {data && data.url && data.url.length > 1 && (
                         <div className="flex flex-col justify-center items-center text-center relative w-full border border-slate-200  max-w-xl bg-white p-6 mb-6 rounded-lg shadow-lg">
-                            <span className="text-lg font-semibold text-gray-800">
-                                {data.title} ----COPY
+
+                            <span className="flex flex-row items-center text-lg font-semibold text-gray-800">
+
+                                {data.title}
+                                <div className="relative group px-1">
+                                    <CopyToClipboard text={data.title}>
+                                        <button
+                                            onClick={() => { setTitleCopied(true) }}
+                                            className="flex items-center justify-center p-1 rounded"
+                                        >
+                                            {titleCopied ? (
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="w-5 h-5 text-green-500"
+                                                    viewBox="0 0 20 20"
+                                                    fill="currentColor"
+                                                >
+                                                    <path
+                                                        fillRule="evenodd"
+                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                        clipRule="evenodd"
+                                                    />
+                                                </svg>
+                                            ) : (
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="w-5 h-5 text-gray-500"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                >
+                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                    </CopyToClipboard>
+                                    {!titleCopied &&
+                                    <span className="absolute hidden group-hover:block bg-gray-700 text-white text-xs p-2 rounded bottom-full left-1/2 -translate-x-1/2 mb-1">
+                                        Copy title
+                                    </span> }
+                                </div>
                             </span>
 
                             <div className="flex flex-col items-center justify-center mb-8 space-y-1 w-full">
@@ -327,7 +372,7 @@ export default function Page() {
                                         Save video
                                     </div>
                                 </a>
-                                <span className="text-gray-500 text-sm">Right click and select 'Save linked file' to save directly without opening video. Copy the title using the button above.</span>
+                                <span className="text-gray-500 text-sm">Right click and select 'Save link as' to save directly without opening video. Copy the title using the button above.</span>
                             </div>
 
                             <section className="bg-gray-100 flex justify-center flex-col items-center p-6 rounded-lg shadow-md w-full">
@@ -381,7 +426,7 @@ export default function Page() {
                             )}
                         </div>
                     )}
-                </div>
+                </div >
             </>
         );
     } else {

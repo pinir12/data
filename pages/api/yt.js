@@ -9,16 +9,14 @@ import { videoDownloaded } from "../../Components/EmailTemplates/videoDownloaded
 import { admin } from "../../Components/EmailTemplates/admin";
 
 
-// add copy title button
+// check copy title button. see if on new vieo load it resets.
+// Then npm unlink react-copy-to-clipboard on both projects and npm install react-copy-to-clipboard here and check
 //check for thumnail url working correcly in email, its correct in system
 
 //merge file functions into 1 for file with output as title. not filename. see if can remove whole block. Then see next line.
 // undo change space for _ in video file download title - better, change from file name to title and maybe won't need all that cleaning block
 
 
-//check ?id and ?url
-//check cookies all good, and success error display
-//check cookies auth for reg user in both pages and api
 //check for not active user functions 401 correctly
 //download page check mobile ui, without and with data
 
