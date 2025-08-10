@@ -50,7 +50,6 @@ console.log(data)
              return true;
         } else {
           if (data && data.is_active === false) {
-            await fail_log(user.name, user.image, user.email, 'user not active');
             await success_log(user.email, false);
             return '/download?error=655';
           }
