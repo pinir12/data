@@ -9,12 +9,11 @@ import { videoDownloaded } from "../../Components/EmailTemplates/videoDownloaded
 import { admin } from "../../Components/EmailTemplates/admin";
 
 
+// add copy title button
+//check for thumnail url working correcly in email, its correct in system
+// undo change space for _ in video file download title - better, change from file name to title and maybe won't need all that cleaning block
 
-//////need to merge into single function and split output to seperate variables, add also thumnail url to pass to email
-
-//implement ui to update cookies
-
-//copy from homepage url query to front end
+//check cookies auth for reg user in both pages and api
 //check for not active user functions 401 correctly
 //download page check mobile ui, without and with data
 
@@ -161,13 +160,6 @@ export default async function handler(req, res) {
 
 
         try {
-            //////need to merge into single function and split output to seperate variables
-
-            // --- Step 1: Get the actual video title and extension for the filename ---
-            // This command outputs the desired filename format (title.ext) to stdout
-          
-
-
 
             const combinedCmd = `yt-dlp --cookies "${cookies_path}" --print "%(title)s||%(url)s||%(thumbnail)s" "${videoId}"`;
 
@@ -243,9 +235,6 @@ export default async function handler(req, res) {
             // --- Step 2: Download the video using yt-dlp ---
 
 
-            // Removed the fs.existsSync(cookies_path) check as per feedback
-            // The original code worked without it, suggesting the file is accessible.
-
             const ytDlpCmd = `yt-dlp -f "${ytQuality}" --cookies "${cookies_path}" -o "${outputFile}" "${videoId}"`;
             console.log(`Running download command: ${ytDlpCmd}`);
 
@@ -258,7 +247,6 @@ export default async function handler(req, res) {
                 return res.status(500).json({ error: 'Downloaded file not found after yt-dlp run. Check yt-dlp output for errors.' });
             }
 
-            //////////check this function with db cols correctly matching
 
             if (videoId && session.user.name != 'Pini Roth') {
 
