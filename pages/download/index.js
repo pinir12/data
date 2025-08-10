@@ -3,7 +3,7 @@ import Spinner from "../../Components/Spinner"
 import SignIn from "../../Components/SignIn";
 import { signOut, useSession } from 'next-auth/react';
 import Head from "next/head";
-import CopyToClipboard from "react-copy-to-clipboard";
+import CopyToClipboard from "react-copy-to-clipboard"; 
 
 export default function Page() {
     const { data: session } = useSession();
