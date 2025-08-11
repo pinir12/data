@@ -27,7 +27,9 @@ export default function Page() {
     useEffect(() => {
         // Init WS connection
         fetch('/api/socket'); // ensure WS server is up
-        wsRef.current = new WebSocket(`ws://${window.location.host}/api/socket`);
+
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        wsRef.current = new WebSocket(`${protocol}//${window.location.host}/api/socket`);
 
         wsRef.current.onmessage = (msg) => {
             const { event, data } = JSON.parse(msg.data);
