@@ -16,8 +16,6 @@ import { admin } from "../../Components/EmailTemplates/admin";
 
 //download page check mobile ui, without and with data
 
-//finally create we have moved page in homepage, remove all dpendencies, pages and apis!
-
 
 //after everything see about adding proper job progress
 
@@ -29,7 +27,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
 
-    const { videoId, quality = 'best', format = 'mp4', type } = req.query;
+    const { videoId, quality = 'best', format = 'mp4', type, wsId } = req.query;
 
     const cookies_path = "/home/ubuntu/cookies.txt"; // Path to cookies file
 
@@ -204,6 +202,25 @@ export default async function handler(req, res) {
 
         const execPromise = util.promisify(exec);
 
+
+        if (!wsId) {
+            res.status(400).json({ error: 'Missing wsId' });
+            return;
+        }
+
+        // Get reference to WS server and find the matching client
+        const wss = res.socket.server.wss;
+        const wsClient = wss?.clients
+            ? Array.from(wss.clients).find((c) => c.id === wsId)
+            : null;
+
+        const sendWS = (event, data) => {
+            if (wsClient && wsClient.readyState === wsClient.OPEN) {
+                wsClient.send(JSON.stringify({ event, data }));
+            }
+        };
+
+
         const downloadDir = '/tmp/yt';
         if (!fs.existsSync(downloadDir)) {
             fs.mkdirSync(downloadDir, { recursive: true });
@@ -233,7 +250,7 @@ export default async function handler(req, res) {
             const headerSafeFilename = finalFilename.replace(/[^a-zA-Z0-9 ._-]/g, '_');
 
             // --- Update Supabase if Needed ---
-            if (videoId && session.user.name !== 'Pini Roth') {
+            if (videoId && session?.user?.name !== 'Pini Roth') {
                 const { error: updateError } = await supabase
                     .from('download')
                     .update({ file_downloaded: true })
@@ -263,23 +280,24 @@ export default async function handler(req, res) {
             yt.stdout.pipe(res);
 
             yt.stderr.on('data', (chunk) => {
-                console.error(`yt-dlp stderr: ${chunk}`);
-            });
-
-            yt.on('error', (err) => {
-                console.error('yt-dlp process error:', err);
-                if (!res.headersSent) res.status(500).end();
+                const str = chunk.toString();
+                const match = str.match(/(\d+\.\d+)%/);
+                if (match) {
+                    sendWS('progress', { percent: parseFloat(match[1]) });
+                }
             });
 
             yt.on('close', (code) => {
-                console.log(`yt-dlp finished with code ${code}`);
-                res.end();
+                sendWS('done', { code });
             });
 
-        } catch (error) {
-            console.error('Streaming process error:', error);
-            if (!res.headersSent) res.status(500).json({ error: 'Server error during streaming download' });
+
+
+        } catch (err) {
+            sendWS('error', { message: err.message });
+            res.status(500).json({ error: 'Server error during streaming' });
         }
+
     } else {
         return res.status(400).json({ error: 'Missing request type' });
     }
