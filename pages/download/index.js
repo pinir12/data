@@ -113,7 +113,7 @@ export default function Page() {
 
             // Create WebSocket connection
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const ws = new WebSocket(`${protocol}//${window.location.host}`);
+            const ws = new WebSocket(`${protocol}//${window.location.host}/api/socket`);
 
             let wsId = null;
 
