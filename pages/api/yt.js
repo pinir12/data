@@ -29,7 +29,14 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
 
-    const { videoId, quality = 'best', format = 'mp4', type } = req.query;
+    const { quality = 'best', format = 'mp4', type } = req.query;
+
+    const videoId =
+        req.query.videoId ??
+        req.query.videoid ??
+        req.query.videoID ??
+        req.query.url ??
+        req.query.id;
 
     const cookies_path = "/home/ubuntu/cookies.txt"; // Path to cookies file
 
