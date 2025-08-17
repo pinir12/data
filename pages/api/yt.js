@@ -228,16 +228,17 @@ export default async function handler(req, res) {
 
         try {
             // --- Step 1: Get metadata only ---
-            const metaCmd = `yt-dlp --cookies "${cookies_path}" --print-json -f "${ytQuality}" "${videoId}"`;
+            const metaCmd = `yt-dlp --cookies "${cookies_path}" -f "${ytQuality}" --skip-download --no-warnings --print "%(title)s\t%(ext)s" "${videoId}"`;
             console.log(`Running metadata command: ${metaCmd}`);
             const { stdout: metaStdout, stderr: metaStderr } = await execPromise(metaCmd);
             if (metaStderr) console.error('yt-dlp metadata stderr:', metaStderr);
 
             let metadata;
             try {
-                metadata = JSON.parse(metaStdout.trim().split('\n').pop());
+                const [title, ext] = metaStdout.trim().split('\t');
+                metadata = { title, ext };
             } catch (err) {
-                console.error('Failed to parse yt-dlp JSON output:', err);
+                console.error('Failed to parse yt-dlp output:', err);
                 return res.status(500).json({ error: 'Could not parse yt-dlp output' });
             }
 
