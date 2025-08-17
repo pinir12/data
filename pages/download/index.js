@@ -52,7 +52,7 @@ export default function Page() {
         setData(null); // Clear previous video data
 
         try {
-            const response = await fetch(`/api/yt?videoId=${encodeURIComponent(videoId)}&type=url`);
+            const response = await fetch(`/api/data?videoId=${encodeURIComponent(videoId)}&type=url`);
 
 
             if (!response.ok) {
@@ -87,7 +87,7 @@ export default function Page() {
         try {
             // Fetch the video blob from your backend API
             const res = await fetch(
-                `/api/yt?videoId=${encodeURIComponent(id)}&quality=${document.getElementById('quality').value}&type=file`
+                `/api/data?videoId=${encodeURIComponent(id)}&quality=${document.getElementById('quality').value}&type=file`
             );
 
             if (!res.ok) {

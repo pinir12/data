@@ -260,6 +260,7 @@ export default async function handler(req, res) {
             );
             res.setHeader('Content-Type', `video/${metadata.ext}`);
 
+            console.log(`Starting file download: ${headerSafeFilename}`);
             // --- Step 3: Spawn yt-dlp for live streaming ---
             const yt = spawn('yt-dlp', [
                 '-f', ytQuality,
