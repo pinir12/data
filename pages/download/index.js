@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Spinner from "../../Components/Spinner"
 import SignIn from "../../Components/SignIn";
 import { signOut, useSession } from 'next-auth/react';
 import Head from "next/head";
-import CopyToClipboard from "react-copy-to-clipboard"; 
+import CopyToClipboard from "react-copy-to-clipboard";
+import { v4 as uuidv4 } from 'uuid';
 
 export default function Page() {
     const { data: session } = useSession();
@@ -17,6 +18,29 @@ export default function Page() {
     const [errorMessage, setErrorMessage] = useState("");
     const [data, setData] = useState(''); // Stores video metadata from initial fetch
     const [titleCopied, setTitleCopied] = useState(false);
+
+    const [progress, setProgress] = useState(0);
+    const wsRef = useRef(null);
+    const wsId = useRef(uuidv4()); // unique ID for this download
+
+
+    useEffect(() => {
+        // Init WS connection
+        fetch('/api/socket'); // ensure WS server is up
+
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        wsRef.current = new WebSocket(`${protocol}//${window.location.host}/api/socket`);
+
+        wsRef.current.onmessage = (msg) => {
+            const { event, data } = JSON.parse(msg.data);
+            if (event === 'progress') setProgress(data.percent);
+            if (event === 'done') console.log('Download finished');
+            if (event === 'error') console.error(data.message);
+        };
+
+        return () => wsRef.current?.close();
+    }, []);
+
 
 
     // const [urlToOpen, setUrlToOpen] = useState(""); // For opening video URL in new tab
@@ -75,62 +99,81 @@ export default function Page() {
             setButtonLoading(false); // Hide spinner on the "Go" button
         }
     };
-
+    //window.location.href = `/api/download?videoId=YOUR_VIDEO_ID&ytQuality=best&wsId=${wsId.current}`;
     // Handles the actual video file download process with progress
     const startDownload = async () => {
-        setErrorMessage(""); // Clear previous errors
-        setTitleCopied(false); // Reset title copied state
-        // Set download progress to preparing state
+        setErrorMessage("");
+        setTitleCopied(false);
         setDownloadProgress({ status: 'preparing', percentage: 0, message: 'Preparing file for download...' });
-        setDownloadButtonLoading(true); // Show spinner on the "Start Download" button
+        setDownloadButtonLoading(true);
 
         try {
-            // Fetch the video blob from your backend API
-            const res = await fetch(
-                `/api/yt?videoId=${encodeURIComponent(id)}&quality=${document.getElementById('quality').value}&type=file`
-            );
+            // Ensure WS API route is started
+            await fetch('/api/socket');
 
-            if (!res.ok) {
-                const errorText = await res.text();
-                throw new Error(`HTTP error! Status: ${res.status} - ${errorText}`);
-            }
+            // Create WebSocket connection
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const ws = new WebSocket(`${protocol}//${window.location.host}/api/socket`);
 
-            // Update progress message as the blob starts transferring to the browser
-            setDownloadProgress({ status: 'downloading-blob', percentage: 50, message: 'Downloading video file...' });
+            let wsId = null;
 
-            const blob = await res.blob(); // Wait for the entire file blob to be received
+            ws.onmessage = (event) => {
+                const { event: evt, data } = JSON.parse(event.data);
+                if (evt === 'wsId') {
+                    wsId = data;
+                    console.log('Connected to WS with ID:', wsId);
+                    // Once we have wsId, start download
+                    startFileDownload(wsId);
+                } else if (evt === 'progress') {
+                    setDownloadProgress({
+                        status: 'downloading',
+                        percentage: data.percent,
+                        message: `Downloading... ${data.percent}%`
+                    });
+                } else if (evt === 'done') {
+                    setDownloadProgress({ status: 'complete', percentage: 100, message: 'Download complete!' });
+                } else if (evt === 'error') {
+                    setDownloadProgress({ status: 'error', percentage: 0, message: 'Error during download' });
+                }
+            };
 
-            // Extract filename from Content-Disposition header, fallback to 'video.mp4'
-            let filename = "video.mp4";
-            const disposition = res.headers.get("Content-Disposition");
-            if (disposition && disposition.includes("filename=")) {
-                // Extract filename and remove quotes
-                filename = disposition
-                    .split("filename=")[1]
-                    .split(";")[0]
-                    .replace(/"/g, "");
-            }
+            const startFileDownload = async (wsId) => {
+                const res = await fetch(
+                    `/api/yt?videoId=${encodeURIComponent(id)}&quality=${document.getElementById('quality').value}&type=file&wsId=${wsId}`
+                );
 
-            // Create a temporary URL for the blob and trigger download
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = filename; // Use the extracted filename
-            document.body.appendChild(a);
-            a.click(); // Programmatically click the link to start download
-            a.remove(); // Clean up the temporary link element
-            window.URL.revokeObjectURL(url); // Release the temporary URL
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`HTTP error! Status: ${res.status} - ${errorText}`);
+                }
 
-            setDownloadProgress({ status: 'complete', percentage: 100, message: 'File downloaded! Check your downloads folder.' });
+                const blob = await res.blob();
+
+                let filename = "video.mp4";
+                const disposition = res.headers.get("Content-Disposition");
+                if (disposition && disposition.includes("filename=")) {
+                    filename = disposition.split("filename=")[1].split(";")[0].replace(/"/g, "");
+                }
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            };
 
         } catch (err) {
             console.error("Download error:", err);
             setErrorMessage(`Download failed: ${err.message}`);
-            setDownloadProgress({ status: 'error', percentage: 0, message: `Download failed` }); // removed ${err.message}
+            setDownloadProgress({ status: 'error', percentage: 0, message: 'Download failed' });
         } finally {
-            setDownloadButtonLoading(false); // Hide spinner on the "Start Download" button
+            setDownloadButtonLoading(false);
         }
     };
+
 
     /* //remove open new tab, replace with button  // Effect to open video URL in a new tab when urlToOpen state changes (only for fetchVideoData)
       useEffect(() => {
@@ -363,9 +406,9 @@ export default function Page() {
                                         </button>
                                     </CopyToClipboard>
                                     {!titleCopied &&
-                                    <span className="absolute hidden group-hover:block bg-gray-700 text-white text-xs p-2 rounded bottom-full left-1/2 -translate-x-1/2 mb-1">
-                                        Copy title
-                                    </span> }
+                                        <span className="absolute hidden group-hover:block bg-gray-700 text-white text-xs p-2 rounded bottom-full left-1/2 -translate-x-1/2 mb-1">
+                                            Copy title
+                                        </span>}
                                 </div>
                             </span>
 
