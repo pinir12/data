@@ -449,6 +449,10 @@ export default function Page() {
                                         {downloadButtonLoading ? (<span className="flex items-center justify-start gap-2 -ml-2"> <Spinner size={5} bg={'text-slate-300'} fill={'fill-white'} />Processing...</span>) : "Start Download"}
                                     </button>
                                 </div>
+                                <span className="text-gray-500 text-sm pt-3">
+                                     <p>Large videos can take a while to process.</p> 
+                                     <p>Do not close this tab until download is complete.</p>
+                                     </span>
                             </section>
 
                             {/* Download Progress Display (only for startDownload) */}
