@@ -364,14 +364,14 @@ export default function Page() {
 
 
                     {/* Video Data and Download Section */}
-                    {/*data && data.url && data.url.length > 1 && ( */ (
+                    {data && data.url && data.url.length > 1 && (
                         <div className="flex flex-col justify-center items-center text-center relative w-full border border-slate-200  max-w-xl bg-white p-6 mb-6 rounded-lg shadow-lg">
 
                             <span className="flex flex-row items-center text-lg font-semibold text-gray-800">
 
-                                {'data.title'}
+                                {data.title}
                                 <div className="relative group px-1">
-                                    <CopyToClipboard text={'data.title'}>
+                                    <CopyToClipboard text={data.title}>
                                         <button
                                             onClick={() => { setTitleCopied(true) }}
                                             className="flex items-center justify-center p-1 rounded"
@@ -413,7 +413,7 @@ export default function Page() {
 
                             <div className="flex flex-col items-center justify-center mb-8 space-y-1 w-full">
 
-                                <a target="_blank" href={'data.url'}>
+                                <a target="_blank" href={data.url}>
                                     <div className=" w-[166px] bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 mb-2 px-6 rounded-lg mt-6 shadow-md transition duration-200 ease-in-out">
                                         Save video
                                     </div>
