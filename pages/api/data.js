@@ -173,7 +173,8 @@ export default async function handler(req, res) {
 
         try {
 
-            const combinedCmd = `yt-dlp --cookies "${cookies_path}" --print "%(title)s||%(url)s||%(thumbnail)s" "${videoId}"`;
+       
+            const combinedCmd = `yt-dlp --cookies "${cookies_path}" -f "best" --print "%(title)s||%(url)s||%(thumbnail)s" "${videoId}"`;
 
             const { stdout, stderr } = await execPromise(combinedCmd);
             if (stderr) console.error('yt-dlp stderr:', stderr);
