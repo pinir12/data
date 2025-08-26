@@ -7,7 +7,7 @@ import CopyToClipboard from "react-copy-to-clipboard";
 import { useSearchParams } from "next/navigation";
 
 export default function Page() {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
     const searchParams = useSearchParams();
 
 
@@ -267,7 +267,17 @@ export default function Page() {
     };
 
 
-
+    if (status === "loading") return (
+        <>
+            <Head>
+                <title>Signing in... </title>
+            </Head>
+            <div className="w-full min-h-screen flex flex-col justify-center align-middle items-center">
+                <Spinner size={5} bg={'text-gray-400'} fill={'fill-white'} />
+                <span className="text-gray-400 text-sm py-2">Loading...</span>
+            </div>
+        </>
+    );
 
 
     // Render the component based on user session
@@ -450,9 +460,9 @@ export default function Page() {
                                     </button>
                                 </div>
                                 <span className="text-gray-500 text-sm pt-3">
-                                     <p>Large videos can take a while to process.</p> 
-                                     <p>Do not close this tab until download is complete.</p>
-                                     </span>
+                                    <p>Large videos can take a while to process.</p>
+                                    <p>Do not close this tab until download is complete.</p>
+                                </span>
                             </section>
 
                             {/* Download Progress Display (only for startDownload) */}
