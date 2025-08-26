@@ -90,6 +90,7 @@ export default function Page() {
 
 
             if (videoData && videoData.videoUrl && playVideo == true) {
+                console.log("Opening video URL in the same tab:", videoData.url);
                 window.open(videoData.url, '_self'); // Set URL to open in new tab
                 return
             }
@@ -296,7 +297,7 @@ export default function Page() {
                         <span className="flex flex-row justify-between items-right bg-gray-100 p-2 rounded-md shadow-sm">
                             <span className="text-gray-600">Hi, {session.user.name.split(" ")[0]}!</span>
 
-                            {session.user.role == 'admin' || 1 == 1  && (
+                            {session.user.role == 'admin' && (
                                 <div className="flex gap-x-2">
                                     <button
                                         className={`px-3 py-1 text-white rounded ${directDownload == 'direct' ? `bg-sky-500` : `bg-gray-400`}`}
