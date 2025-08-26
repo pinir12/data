@@ -26,7 +26,6 @@ export default function Page() {
     const [quality, setQuality] = useState('medium');
 
 
-
     // const [urlToOpen, setUrlToOpen] = useState(""); // For opening video URL in new tab
 
     // State for download progress display (only for startDownload function)
@@ -35,14 +34,6 @@ export default function Page() {
         percentage: 0,
         message: ''
     });
-
-
-
-
-
-
-
-
 
 
 
@@ -295,6 +286,27 @@ export default function Page() {
                     <div className="static top-0 w-full">
                         <span className="flex flex-row justify-between items-right bg-gray-100 p-2 rounded-md shadow-sm">
                             <span className="text-gray-600">Hi, {session.user.name.split(" ")[0]}!</span>
+
+                            {session.user.role == 'admin' && (
+                                <div className="flex gap-x-2">
+                                    <button
+                                        className={`px-3 py-1 text-white rounded ${directDownload == 'direct' ? `bg-blue-500` : `bg-gray-400`}`}
+                                        onClick={() => { setDirectDownload(directDownload == '' ? 'direct' : '') }} >
+                                        File Download
+                                    </button>
+
+                                    <button
+                                        className={`px-3 py-1 text-white rounded ${bypassCheck == 'bypass' ? `bg-green-500` : `bg-gray-400`}`}
+                                        onClick={() => { setBypassCheck(bypassCheck == '' ? 'bypass' : '') }} >
+                                        Bypass Checks
+                                    </button>
+
+                                </div>
+                            )}
+
+
+
+
                             <span
                                 onClick={() => signOut()}
                                 className="bg-slate-500 hover:bg-gray-400 text-sm border border-slate-100 cursor-pointer rounded px-3 py-1 text-white transition duration-200 ease-in-out"
@@ -303,7 +315,6 @@ export default function Page() {
                             </span>
                         </span>
                     </div>
-
 
 
                     {/* Input and Go/Clear Buttons */}
