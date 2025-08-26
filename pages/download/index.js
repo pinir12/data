@@ -89,7 +89,7 @@ export default function Page() {
             const videoData = await response.json();
 
 
-            if (videoData && videoData.videoUrl && playVideo == true) {
+            if (videoData && videoData.url && playVideo == true) {
                 console.log("Opening video URL in the same tab:", videoData.url);
                 window.open(videoData.url, '_self'); // Set URL to open in new tab
                 return
