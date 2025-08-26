@@ -23,6 +23,7 @@ export default function Page() {
     const [titleCopied, setTitleCopied] = useState(false);
     const [directDownload, setDirectDownload] = useState(false);
     const [bypassCheck, setBypassCheck] = useState('');
+    const [playVideo, setPlayVideo] = useState(false);
     const [quality, setQuality] = useState('medium');
 
 
@@ -41,6 +42,7 @@ export default function Page() {
         const videoIdFromUrl = searchParams.get("id") || searchParams.get("url");
         const download = searchParams.get("download") !== null;
         const noCheck = searchParams.get("nocheck") !== null;
+        const play = searchParams.get("play") !== null;
         let bypass = '';
         let direct = '';
 
@@ -55,6 +57,10 @@ export default function Page() {
             bypass = 'bypass';
         }
 
+        if (play) {
+            setPlayVideo(true);
+        }
+
 
         if (videoIdFromUrl) {
             setInputUrl(videoIdFromUrl);
@@ -65,8 +71,7 @@ export default function Page() {
 
 
 
-
-    // Fetches video metadata (title, description, etc.)
+    // Fetches video metadata (title and url for playback)
     const fetchVideoData = async (videoId) => {
         setButtonLoading(true); // Show spinner on the "Go" button
         setErrorMessage(""); // Clear previous errors
@@ -76,18 +81,20 @@ export default function Page() {
         try {
             const response = await fetch(`/api/data?videoId=${encodeURIComponent(videoId)}&type=url`);
 
-
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(errorText);
             }
 
             const videoData = await response.json();
-            setData(videoData);
 
-            //  if (videoData && videoData.videoUrl) {
-            //      setUrlToOpen(videoData.videoUrl); // Set URL to open in new tab
-            //  }
+
+            if (videoData && videoData.videoUrl && playVideo == true) {
+                window.open(videoData.url, '_self'); // Set URL to open in new tab
+                return
+            }
+
+            setData(videoData);
 
         } catch (error) {
             //console.error("Error fetching video data:", error);
@@ -97,6 +104,8 @@ export default function Page() {
             setButtonLoading(false); // Hide spinner on the "Go" button
         }
     };
+
+
 
     // Handles the actual video file download process
     const startDownload = async (videoId) => {
@@ -178,11 +187,11 @@ export default function Page() {
         setData(null);
 
         if (bypassCheck) {
-            bypassLengthCheck = bypassCheck
+            bypassLengthCheck = bypassCheck;
         }
 
         if (directDownload) {
-            downloadType = directDownload
+            downloadType = directDownload;
         }
 
         // Do NOT reset downloadProgress here, as it's separate for startDownload
@@ -287,10 +296,10 @@ export default function Page() {
                         <span className="flex flex-row justify-between items-right bg-gray-100 p-2 rounded-md shadow-sm">
                             <span className="text-gray-600">Hi, {session.user.name.split(" ")[0]}!</span>
 
-                            {session.user.role == 'admin' && (
+                            {session.user.role == 'admin' || 1 == 1  && (
                                 <div className="flex gap-x-2">
                                     <button
-                                        className={`px-3 py-1 text-white rounded ${directDownload == 'direct' ? `bg-blue-500` : `bg-gray-400`}`}
+                                        className={`px-3 py-1 text-white rounded ${directDownload == 'direct' ? `bg-sky-500` : `bg-gray-400`}`}
                                         onClick={() => { setDirectDownload(directDownload == '' ? 'direct' : '') }} >
                                         File Download
                                     </button>
@@ -299,6 +308,12 @@ export default function Page() {
                                         className={`px-3 py-1 text-white rounded ${bypassCheck == 'bypass' ? `bg-green-500` : `bg-gray-400`}`}
                                         onClick={() => { setBypassCheck(bypassCheck == '' ? 'bypass' : '') }} >
                                         Bypass Checks
+                                    </button>
+
+                                      <button
+                                        className={`px-3 py-1 text-white rounded ${playVideo ? `bg-rose-500` : `bg-gray-400`}`}
+                                        onClick={() => { setPlayVideo(!playVideo) }} >
+                                        Play Video
                                     </button>
 
                                 </div>
