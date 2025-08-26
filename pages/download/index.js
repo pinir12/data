@@ -45,6 +45,7 @@ export default function Page() {
         const play = searchParams.get("play") !== null;
         let bypass = '';
         let direct = '';
+        let playNow = false;
 
         if (download) {
             setDirectDownload('direct');
@@ -59,20 +60,21 @@ export default function Page() {
 
         if (play) {
             setPlayVideo(true);
+            playNow = true;
         }
 
 
         if (videoIdFromUrl) {
             setInputUrl(videoIdFromUrl);
             // fetchVideoData(videoIdFromUrl);
-            handleGoClick(videoIdFromUrl, bypass, direct);
+            handleGoClick(videoIdFromUrl, bypass, direct, playNow);
         }
     }, [searchParams]);
 
 
 
     // Fetches video metadata (title and url for playback)
-    const fetchVideoData = async (videoId) => {
+    const fetchVideoData = async (videoId, playNow) => {
         setButtonLoading(true); // Show spinner on the "Go" button
         setErrorMessage(""); // Clear previous errors
         setTitleCopied(false); // Reset title copied state
@@ -89,7 +91,7 @@ export default function Page() {
             const videoData = await response.json();
 
 
-            if (videoData && videoData.url && playVideo == true) {
+            if (videoData && videoData.url && (playVideo || playNow)) {
                 console.log("Opening video URL in the same tab:", videoData.url);
                 window.open(videoData.url, '_self'); // Set URL to open in new tab
                 return
@@ -182,7 +184,7 @@ export default function Page() {
     };
 
     // Processes the input URL or video ID (only triggers fetchVideoData)
-    const handleGoClick = (url = null, bypassLengthCheck = '', downloadType = '') => {
+    const handleGoClick = (url = null, bypassLengthCheck = '', downloadType = '', playNow = false) => {
         setErrorMessage("");
         setTitleCopied(false); // Reset title copied state
         setData(null);
@@ -194,6 +196,11 @@ export default function Page() {
         if (directDownload) {
             downloadType = directDownload;
         }
+
+        if (playVideo) {
+            playNow = playVideo;
+        }
+
 
         // Do NOT reset downloadProgress here, as it's separate for startDownload
         // setDownloadProgress({ status: 'idle', percentage: 0, message: '' }); // REMOVED
@@ -231,7 +238,7 @@ export default function Page() {
                 if (downloadType == 'direct') {
                     startDownload(videoId);
                 } else {
-                    fetchVideoData(videoId);
+                    fetchVideoData(videoId, playNow);
                 }
             }
 
