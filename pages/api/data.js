@@ -10,16 +10,9 @@ import { videoDownloaded } from "../../Components/EmailTemplates/videoDownloaded
 import { admin } from "../../Components/EmailTemplates/admin";
 
 
-
-
-
-
+// redo whole get count, jut one db call, update count +1 if poss, select new count from and save to var
+// why not combine with check if active as well, just 1 call for all
 //download page check mobile ui, without and with data
-
-//finally create we have moved page in homepage, remove all dpendencies, pages and apis!
-
-
-//after everything see about adding proper job progress
 
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -29,7 +22,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
 
-    const { quality = 'best', format = 'mp4', type } = req.query;
+    const { quality = 'best', format = 'mp4', type, rowId = '' } = req.query;
+
 
     const videoId =
         req.query.videoId ??
@@ -44,6 +38,8 @@ export default async function handler(req, res) {
     const userEmail = session.user.email;
     const userName = session.user.name;
 
+
+
     // --- Map Quality Options to yt-dlp Formats ---
     const qualityMap = {
         high: 'bestvideo[height>=1080]+bestaudio/best[height>=1080]', // Prefer 1080p, then best overall
@@ -52,6 +48,18 @@ export default async function handler(req, res) {
         best: 'best', // Default to best available quality
     };
     const ytQuality = qualityMap[quality] || qualityMap.best;
+
+    const updateProgress = async (progress, rowId) => {
+        // update Supabase row
+        const { error } = await supabase
+            .from("download")
+            .update({
+                progress: progress,
+            })
+            .eq("id", rowId);
+
+        if (error) console.error("Supabase update error:", error.message);
+    }
 
 
     // --- Authentication Check ---
@@ -75,7 +83,7 @@ export default async function handler(req, res) {
 
             if (isActive[0].is_active == false) {
                 console.log("error: User not active")
-                return res.status(401).json({ error: "User not active" });
+                return res.status(403).json({ error: "User not active" });
             }
 
             if (isActiveError) {
@@ -102,18 +110,15 @@ export default async function handler(req, res) {
         let newCount;
         const getNewCount = async () => {
             try {
-                const { data: countData, error: countError } = await supabase
-                    .from('download_users')
-                    .select('count', { count: 'exact' })
-                    .eq('email', userEmail);
+                 const { data: countData, error: countError } = await supabase
+                     .from('download_users')
+                     .select('count', { count: 'exact' })
+                     .eq('email', userEmail);
+                     
 
-                if (countError) {
-                    console.error("Error fetching count:", countError);
-                    throw new Error('Error fetching download count');
-                }
+               
 
-
-                if (countData) {
+               if (countData) {
                     newCount = countData[0].count + 1;
 
                     const { error: updateError } = await supabase
@@ -125,7 +130,7 @@ export default async function handler(req, res) {
                         console.error("Error updating count:", updateError);
                         throw new Error('Error updating download count');
                     }
-                }
+                } 
             } catch (error) {
                 console.error("Error in updateDatabase:", error);
                 throw error;
@@ -158,9 +163,11 @@ export default async function handler(req, res) {
         //function called to update and insert record to supabase
         const updateDatabase = async (url, videoTitle, userEmail) => {
 
-            const { data: newVideoId, error: downloadError } = await supabase
+            const { data: newRowId, error: downloadError } = await supabase
                 .from('download')
-                .insert([{ url, video_title: videoTitle, user_email: userEmail }]);
+                .insert([{ url, video_title: videoTitle, user_email: userEmail }])
+                .select('id')
+
 
 
             if (downloadError) {
@@ -168,13 +175,15 @@ export default async function handler(req, res) {
                 throw new Error('Error adding download record');
             }
 
+            return newRowId;
+
         }
 
 
         try {
 
-       
-            const combinedCmd = `yt-dlp --cookies "${cookies_path}" -f 'best[protocol="https"]' --print "%(title)s||%(url)s||%(thumbnail)s" "${videoId}"`;
+
+            const combinedCmd = `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s" "${videoId}"`;
 
             const { stdout, stderr } = await execPromise(combinedCmd);
             if (stderr) console.error('yt-dlp stderr:', stderr);
@@ -182,14 +191,12 @@ export default async function handler(req, res) {
             // Split into variables
             const [videoTitle, videoDirectUrl, videoThumbnail] = stdout.trim().split('||');
 
-            console.log('Title:', videoTitle);
-            console.log('Direct URL:', videoDirectUrl);
-            console.log('Thumbnail:', videoThumbnail);
 
+            let rowId;
 
             if (userName != 'Pini Roth') {
                 await getNewCount();
-                await updateDatabase(videoId, videoTitle, userEmail);
+                rowId = await updateDatabase(videoId, videoTitle, userEmail);
                 await sendEmails(videoTitle, videoThumbnail)
             }
 
@@ -199,6 +206,7 @@ export default async function handler(req, res) {
             res.status(200).json({
                 title: videoTitle,
                 url: videoDirectUrl,
+                rowId: rowId[0].id,
             });
 
         } catch (error) {
@@ -211,6 +219,8 @@ export default async function handler(req, res) {
     } else if (type == 'file') {
 
         const execPromise = util.promisify(exec);
+
+
 
         const downloadDir = '/tmp/yt';
         if (!fs.existsSync(downloadDir)) {
@@ -226,7 +236,7 @@ export default async function handler(req, res) {
 
             let metadata;
             try {
-                const [title, ext] = metaStdout.trim().split('\t');
+                const [title, ext] = metaStdout.trim().split("\t");
                 metadata = { title, ext };
             } catch (err) {
                 console.error('Failed to parse yt-dlp output:', err);
@@ -243,16 +253,22 @@ export default async function handler(req, res) {
 
             // --- Update Supabase if Needed ---
             if (videoId && session.user.name !== 'Pini Roth') {
-                const { error: updateError } = await supabase
+                const { data, error: updateError } = await supabase
                     .from('download')
                     .update({ file_downloaded: true })
-                    .eq('url', videoId);
+                    .eq('id', rowId)
+                    .eq('user_email', userEmail)
+
 
                 if (updateError) {
                     console.error("Error updating count:", updateError);
                     throw new Error('Error updating download count');
                 }
+
+
+                console.log(`Updated download record ID: ${rowId} as file_downloaded`);
             }
+
 
             // --- Step 2: Set response headers ---
             res.setHeader(
@@ -266,25 +282,64 @@ export default async function handler(req, res) {
             const yt = spawn('yt-dlp', [
                 '-f', ytQuality,
                 '--cookies', cookies_path,
+                "--progress-template",
+                '{"percent":%(progress._percent_str)s}',
                 '-o', '-', // Output to stdout (stream)
                 videoId
             ]);
 
-            yt.stdout.pipe(res);
+            updateProgress(0, rowId); // Initial progress 0%
 
-            yt.stderr.on('data', (chunk) => {
-                console.error(`yt-dlp stderr: ${chunk}`);
+            let totalBytes = 0;
+            let downloadedBytes = 0;
+
+            // capture total size from yt-dlp logs (stderr)
+            yt.stderr.on("data", (chunk) => {
+                const msg = chunk.toString();
+                const matches = [...msg.matchAll(/clen=(\d+)/g)];
+                for (const m of matches) {
+                    totalBytes += parseInt(m[1], 10);
+                }
+                if (matches.length > 0) {
+                    console.log("Total bytes:", totalBytes);
+                }
             });
 
-            yt.on('error', (err) => {
-                console.error('yt-dlp process error:', err);
+
+            let lastPercent = 0;
+            let lastUpdate = Date.now();
+
+            yt.stdout.on("data", (chunk) => {
+                downloadedBytes += chunk.length;
+
+                if (totalBytes > 0) {
+                    const percent = Math.floor((downloadedBytes / totalBytes) * 100);
+                    const now = Date.now();
+
+                    // update if at least 1% more OR at least 5s passed
+                    if (percent >= lastPercent + 1 || now - lastUpdate > 5000) {
+                        lastPercent = percent;
+                        lastUpdate = now;
+                        updateProgress(percent, rowId);
+                    }
+                }
+            });
+
+
+            // Pipe the actual data to response
+            yt.stdout.pipe(res);
+
+            yt.on("close", (code) => {
+                console.log(`yt-dlp finished with code ${code}`);
+                // updateProgress(100, supabaseId); // Final progress 100%
+                res.end();
+            });
+
+            yt.on("error", (err) => {
+                console.error("yt-dlp error:", err);
                 if (!res.headersSent) res.status(500).end();
             });
 
-            yt.on('close', (code) => {
-                console.log(`yt-dlp finished with code ${code}`);
-                res.end();
-            });
 
         } catch (error) {
             console.error('Streaming process error:', error);

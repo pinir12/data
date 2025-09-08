@@ -5,11 +5,13 @@ import { signOut, useSession } from 'next-auth/react';
 import Head from "next/head";
 import CopyToClipboard from "react-copy-to-clipboard";
 import { useSearchParams } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
+
+
 
 export default function Page() {
     const { data: session, status } = useSession();
     const searchParams = useSearchParams();
-
 
 
     const [inputUrl, setInputUrl] = useState("");
@@ -24,39 +26,55 @@ export default function Page() {
     const [directDownload, setDirectDownload] = useState(false);
     const [bypassCheck, setBypassCheck] = useState('');
     const [playVideo, setPlayVideo] = useState(false);
-    const [quality, setQuality] = useState('medium');
+    const [quality, setQuality] = useState('best');
 
-
-    // const [urlToOpen, setUrlToOpen] = useState(""); // For opening video URL in new tab
-
+    const [rowId, setRowId] = useState(null);
+    const [progress, setProgress] = useState(0);
     // State for download progress display (only for startDownload function)
     const [downloadProgress, setDownloadProgress] = useState({
         status: 'idle', // 'idle', 'preparing', 'downloading-blob', 'complete', 'error'
-        percentage: 0,
         message: ''
     });
+
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const progressListen = () => {
+
+        const channel = supabase
+            .channel("download")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "download" },
+                (payload) => {
+                    if (payload.eventType === "UPDATE" && payload.new.id === rowId && payload.new.user_email == session.user.email) {
+                        const updatedRow = payload.new;
+                        setProgress(updatedRow.progress);
+                    }
+                }
+            )
+            .subscribe((status, err) => {
+                console.log("🔌 STATUS:", status, err ?? "");
+            });
+
+        return () => {
+            supabase.removeChannel(channel);
+
+        }
+    }
+
+
+
 
 
 
     useEffect(() => {
         const videoIdFromUrl = searchParams.get("id") || searchParams.get("url");
-        const download = searchParams.get("download") !== null;
-        const noCheck = searchParams.get("nocheck") !== null;
         const play = searchParams.get("play") !== null;
-        let bypass = '';
-        let direct = '';
         let playNow = false;
 
-        if (download) {
-            setDirectDownload('direct');
-            direct = 'direct';
-        }
-
-
-        if (noCheck) {
-            setBypassCheck('bypass');
-            bypass = 'bypass';
-        }
 
         if (play) {
             setPlayVideo(true);
@@ -66,8 +84,9 @@ export default function Page() {
 
         if (videoIdFromUrl) {
             setInputUrl(videoIdFromUrl);
-            // fetchVideoData(videoIdFromUrl);
-            handleGoClick(videoIdFromUrl, bypass, direct, playNow);
+            if (playNow) {
+                fetchVideoData(videoIdFromUrl, playNow);
+            }
         }
     }, [searchParams]);
 
@@ -79,30 +98,41 @@ export default function Page() {
         setErrorMessage(""); // Clear previous errors
         setTitleCopied(false); // Reset title copied state
         setData(null); // Clear previous video data
+        setRowId(null); // Clear previous row ID
+
 
         try {
             const response = await fetch(`/api/data?videoId=${encodeURIComponent(videoId)}&type=url`);
 
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(errorText);
+                if (response.status == 403) {
+                    throw new Error('error403');
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(errorText);
+                }
             }
 
             const videoData = await response.json();
 
 
             if (videoData && videoData.url && (playVideo || playNow)) {
-                console.log("Opening video URL in the same tab:", videoData.url);
                 window.open(videoData.url, '_self'); // Set URL to open in new tab
                 return
             }
 
             setData(videoData);
+            setRowId(videoData.rowId);
 
         } catch (error) {
+            const errorString = error.toString();
             //console.error("Error fetching video data:", error);
             console.error(error);
-            setErrorMessage(`Video download failed. Please try again later.`);
+            if (errorString.includes('error403')) {
+                setErrorMessage(`Video download failed. Your account is not active`);
+            } else {
+                setErrorMessage(`Video download failed. Please try again later`);
+            }
         } finally {
             setButtonLoading(false); // Hide spinner on the "Go" button
         }
@@ -116,22 +146,28 @@ export default function Page() {
         setErrorMessage(""); // Clear previous errors
         setTitleCopied(false); // Reset title copied state
         // Set download progress to preparing state
-        setDownloadProgress({ status: 'preparing', percentage: 0, message: 'Preparing file for download...' });
+        setDownloadProgress({ status: 'preparing', message: 'Preparing file for download...' });
+        setProgress(0);
         setDownloadButtonLoading(true); // Show spinner on the "Start Download" button
+
+
+
+
+
 
         try {
             // Fetch the video blob from your backend API
             const res = await fetch(
-                `/api/data?videoId=${encodeURIComponent(videoId)}&quality=${quality}&type=file`
-            );
+                `/api/data?videoId=${encodeURIComponent(videoId)}&quality=${quality}&type=file&rowId=${rowId}`, {
+                timeout: 60000, // 60 seconds
+            });
 
             if (!res.ok) {
                 const errorText = await res.text();
                 throw new Error(`HTTP error! Status: ${res.status} - ${errorText}`);
             }
 
-            // Update progress message as the blob starts transferring to the browser
-            setDownloadProgress({ status: 'downloading-blob', percentage: 50, message: 'Downloading video file...' });
+            progressListen();
 
             const blob = await res.blob(); // Wait for the entire file blob to be received
 
@@ -156,25 +192,22 @@ export default function Page() {
             a.remove(); // Clean up the temporary link element
             window.URL.revokeObjectURL(url); // Release the temporary URL
 
-            setDownloadProgress({ status: 'complete', percentage: 100, message: 'File downloaded! Check your downloads folder.' });
+            setDownloadProgress({ status: 'complete', message: 'File downloaded! Check your downloads folder.' });
+            setProgress(100);
+
 
         } catch (err) {
             console.error("Download error:", err);
-            setErrorMessage(`Video download failed. Please try again later.`);
-            setDownloadProgress({ status: 'error', percentage: 0, message: `Download failed` }); // removed ${err.message}
+            setErrorMessage(`Video download failed. Please try again later`);
+            setDownloadProgress({ status: 'error', message: `Download failed` }); // removed ${err.message}
+            setProgress(0);
         } finally {
             setDownloadButtonLoading(false); // Hide spinner on the "Start Download" button
         }
+
     };
 
-    /* //remove open new tab, replace with button  // Effect to open video URL in a new tab when urlToOpen state changes (only for fetchVideoData)
-      useEffect(() => {
-          if (urlToOpen) {
-              window.open(urlToOpen, '_blank');
-              setUrlToOpen(null); // Reset the URL to avoid opening it repeatedly
-          }
-      }, [urlToOpen]);
-      */
+
 
     // Handles Enter key press in the input field
     const handleKeyDown = (event) => {
@@ -184,26 +217,16 @@ export default function Page() {
     };
 
     // Processes the input URL or video ID (only triggers fetchVideoData)
-    const handleGoClick = (url = null, bypassLengthCheck = '', downloadType = '', playNow = false) => {
+    const handleGoClick = (url = null, playNow = false) => {
         setErrorMessage("");
         setTitleCopied(false); // Reset title copied state
         setData(null);
 
-        if (bypassCheck) {
-            bypassLengthCheck = bypassCheck;
-        }
-
-        if (directDownload) {
-            downloadType = directDownload;
-        }
 
         if (playVideo) {
             playNow = playVideo;
         }
 
-
-        // Do NOT reset downloadProgress here, as it's separate for startDownload
-        // setDownloadProgress({ status: 'idle', percentage: 0, message: '' }); // REMOVED
 
         let videoId = null;
         let urlString = url.toString() || inputUrl.toString();
@@ -221,7 +244,7 @@ export default function Page() {
 
 
             } catch (e) {
-                setErrorMessage("Invalid URL format.");
+                setErrorMessage("Invalid URL format");
                 return;
             }
         } else {
@@ -230,12 +253,12 @@ export default function Page() {
 
         if (videoId) {
             videoId = videoId.split("?")[0];
-            if (bypassLengthCheck != 'bypass' && videoId.length !== 11) {
-                setErrorMessage("Invalid video ID.");
+            if (bypassCheck != 'bypass' && videoId.length !== 11) {
+                setErrorMessage("Invalid video ID");
                 return;
             } else {
                 setId(videoId);
-                if (downloadType == 'direct') {
+                if (directDownload == 'direct') {
                     startDownload(videoId);
                 } else {
                     fetchVideoData(videoId, playNow);
@@ -243,7 +266,7 @@ export default function Page() {
             }
 
         } else {
-            setErrorMessage("Please enter a valid YouTube URL or video ID.");
+            setErrorMessage("Please enter a valid YouTube URL or video ID");
         }
     };
 
@@ -254,7 +277,9 @@ export default function Page() {
         setTitleCopied(false)
         setData(null);
         // Reset downloadProgress when clearing everything
-        setDownloadProgress({ status: 'idle', percentage: 0, message: '' });
+        setDownloadProgress({ status: 'idle', message: '' });
+        setProgress(0);
+        setRowId(null);
     };
 
     // Handles file/URL drop event
@@ -318,7 +343,7 @@ export default function Page() {
                                         Bypass Checks
                                     </button>
 
-                                      <button
+                                    <button
                                         className={`px-3 py-1 text-white rounded ${playVideo ? `bg-rose-500` : `bg-gray-400`}`}
                                         onClick={() => { setPlayVideo(!playVideo) }} >
                                         Play Video
@@ -326,7 +351,6 @@ export default function Page() {
 
                                 </div>
                             )}
-
 
 
 
@@ -338,7 +362,6 @@ export default function Page() {
                             </span>
                         </span>
                     </div>
-
 
                     {/* Input and Go/Clear Buttons */}
                     <div className="flex flex-row justify-center mt-8 w-full max-w-xl">
@@ -354,7 +377,7 @@ export default function Page() {
                             <button
                                 className={`w-16 h-10 px-3 py-1 bg-blue-600 text-white rounded-none cursor-pointer flex items-center justify-center transition duration-200 ease-in-out ${buttonLoading ? "opacity-70 cursor-not-allowed" : "hover:bg-blue-700"}`}
                                 onClick={() => handleGoClick("")}
-                                disabled={buttonLoading} // Controls spinner for 'Go' button
+                                disabled={buttonLoading || downloadButtonLoading}
                             >
                                 {buttonLoading ? (
                                     <Spinner size={5} bg={'text-blue-200'} fill={'fill-white'} />
@@ -380,6 +403,7 @@ export default function Page() {
                                 className="w-16 h-10 px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-r-lg cursor-pointer flex items-center justify-center transition duration-200 ease-in-out"
                                 onClick={handleClear}
                                 onDragEnter={handleClear}
+                                disabled={buttonLoading || downloadButtonLoading}
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -477,6 +501,7 @@ export default function Page() {
                                         onChange={handleQualityChange}
                                         className="py-2 px-3 text-md rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                                     >
+                                        <option value="best">Highest</option>
                                         <option value="high">High (1080p)</option>
                                         <option value="medium">Medium (720p)</option>
                                         <option value="low">Low (480p)</option>
@@ -507,10 +532,10 @@ export default function Page() {
                                         <div className="w-full bg-blue-200 rounded-full h-4 relative overflow-hidden">
                                             <div
                                                 className="bg-blue-600 h-4 rounded-full transition-all duration-300 ease-out"
-                                                style={{ width: `${downloadProgress.percentage}%` }}
+                                                style={{ width: `${progress}%` }}
                                             ></div>
                                             <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-white">
-                                                {downloadProgress.percentage.toFixed(0)}%
+                                                {progress.toFixed(0)}%
                                             </span>
                                         </div>
                                     )}
