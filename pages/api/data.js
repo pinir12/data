@@ -198,6 +198,8 @@ export default async function handler(req, res) {
                 await getNewCount();
                 rowId = await updateDatabase(videoId, videoTitle, userEmail);
                 await sendEmails(videoTitle, videoThumbnail)
+            } else {
+                rowId = [{ id: '' }];
             }
 
             res.setHeader('Access-Control-Allow-Origin', '*');
@@ -206,7 +208,7 @@ export default async function handler(req, res) {
             res.status(200).json({
                 title: videoTitle,
                 url: videoDirectUrl,
-                rowId: rowId[0].id || '',
+                rowId: rowId[0].id,
             });
 
         } catch (error) {
