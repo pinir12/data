@@ -206,7 +206,7 @@ export default async function handler(req, res) {
             res.status(200).json({
                 title: videoTitle,
                 url: videoDirectUrl,
-                rowId: rowId[0].id,
+                rowId: rowId[0].id || '',
             });
 
         } catch (error) {

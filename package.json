@@ -16,9 +16,7 @@
     "react": "^18",
     "react-copy-to-clipboard": "^5.1.0",
     "react-dom": "^18",
-    "resend": "^4.1.2",
-    "uuid": "^11.1.0",
-    "ws": "^8.18.3"
+    "resend": "^4.1.2"
   },
   "devDependencies": {
     "postcss": "^8",
