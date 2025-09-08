@@ -117,7 +117,7 @@ export default async function handler(req, res) {
                      .eq('email', userEmail);
                      
 
-               
+                
 
                if (countData) {
                     newCount = countData[0].count + 1;
@@ -184,10 +184,11 @@ export default async function handler(req, res) {
         try {
 
 
-            const combinedCmd = `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s" "${videoId}"`;
+            const combinedCmd = `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s"  -f 'best[protocol="https"]'   "${videoId}"`;
 
             const { stdout, stderr } = await execPromise(combinedCmd);
             if (stderr) console.error('yt-dlp stderr:', stderr);
+             if (stdout) console.log('yt-dlp stdout:', stdout);
 
             // Split into variables
             const [videoTitle, videoDirectUrl, videoThumbnail] = stdout.trim().split('||');
