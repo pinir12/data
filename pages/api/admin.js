@@ -75,7 +75,7 @@ export default async function handler(req, res) {
 
         try {
             // --- Step 1: Get metadata only ---
-            const metaCmd = `yt-dlp --cookies "${cookies_path}" -f "${ytQuality}" --skip-download --no-warnings --print "%(title)s\t%(ext)s" "${videoId}"`;
+            const metaCmd = `yt-dlp --cookies "${cookies_path}" -f best --skip-download --no-warnings --print "%(title)s\t%(ext)s" "${videoId}"`;
             console.log(`Running metadata command: ${metaCmd}`);
             const { stdout: metaStdout, stderr: metaStderr } = await execPromise(metaCmd);
             if (metaStderr) console.error('yt-dlp metadata stderr:', metaStderr);
@@ -108,7 +108,7 @@ export default async function handler(req, res) {
             console.log(`Starting file download: ${headerSafeFilename}`);
             // --- Step 3: Spawn yt-dlp for live streaming ---
             const yt = spawn('yt-dlp', [
-                '-f', ytQuality,
+                '-f best',
                 '--cookies', cookies_path,
                 "--progress-template",
                 '{"percent":%(progress._percent_str)s}',
