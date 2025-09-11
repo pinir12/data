@@ -129,7 +129,7 @@ export default function Page() {
             //console.error("Error fetching video data:", error);
             console.error(error);
             if (errorString.includes('error403')) {
-                setErrorMessage(`Video download failed. Your account is not active`);
+                setErrorMessage(`Your account is not active`);
             } else {
                 setErrorMessage(`Video download failed. Please try again later`);
             }

@@ -47,7 +47,7 @@ export default async function handler(req, res) {
              if (stdout) console.log('yt-dlp stdout:', stdout);
 
             // Split into variables
-            const [videoTitle, videoDirectUrl, videoThumbnail] = stdout.trim().split('||');
+            const [videoTitle, videoDirectUrl] = stdout.trim().split('||');
 
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('X-Extension-Request', 'true');
