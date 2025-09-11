@@ -20,8 +20,6 @@ const success_log = async (email, success) => {
     .match({ email: email });
 };
 
-console.log("NEXTAUTH_URL:", process.env.NEXTAUTH_URL);
-
 
 export default NextAuth({
   providers: [
@@ -40,7 +38,6 @@ export default NextAuth({
         .select('role, is_active')
         .eq('email', user.email)
         .single();
-console.log(data)
       if (!data) {
         return '/download?error=656';
       } else {
