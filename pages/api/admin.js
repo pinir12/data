@@ -101,7 +101,7 @@ export default async function handler(req, res) {
             // --- Step 2: Set response headers ---
             res.setHeader(
                 'Content-Disposition',
-                `attachment; filename="${headerSafeFilename}"; filename*=UTF-8''${encodeURIComponent(finalFilename)}`
+                `attachment; filename="${headerSafeFilename}"; filename*=UTF-8''${encodeURIComponent(finalFilename)}`.replace(/[\r\n]/g, '')
             );
             res.setHeader('Content-Type', `video/${metadata.ext}`);
 
@@ -109,7 +109,7 @@ export default async function handler(req, res) {
             // --- Step 3: Spawn yt-dlp for live streaming ---
             const yt = spawn('yt-dlp', [
                 '-f best',
-                '--cookies', cookies_path,
+                '--cookies', cookies_path.replace(/[\r\n]/g, ''),
                 "--progress-template",
                 '{"percent":%(progress._percent_str)s}',
                 '-o', '-', // Output to stdout (stream)
