@@ -112,15 +112,15 @@ export default async function handler(req, res) {
         let newCount;
         const getNewCount = async () => {
             try {
-                 const { data: countData, error: countError } = await supabase
-                     .from('download_users')
-                     .select('count', { count: 'exact' })
-                     .eq('email', userEmail);
-                     
+                const { data: countData, error: countError } = await supabase
+                    .from('download_users')
+                    .select('count', { count: 'exact' })
+                    .eq('email', userEmail);
 
-                
 
-               if (countData) {
+
+
+                if (countData) {
                     newCount = countData[0].count + 1;
 
                     const { error: updateError } = await supabase
@@ -132,7 +132,7 @@ export default async function handler(req, res) {
                         console.error("Error updating count:", updateError);
                         throw new Error('Error updating download count');
                     }
-                } 
+                }
             } catch (error) {
                 console.error("Error in updateDatabase:", error);
                 throw error;
@@ -185,11 +185,11 @@ export default async function handler(req, res) {
         try {
 
 
-            const combinedCmd = `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s"  -f 'best[protocol="https"]'   "${videoId}"`;
-
+            const combinedCmd = `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s"  -f 'best'   "${videoId}"`;
+            // const combinedCmd = `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s"  -f 'best[protocol="https"]'   "${videoId}"`;
             const { stdout, stderr } = await execPromise(combinedCmd);
             if (stderr) console.error('yt-dlp stderr:', stderr);
-             if (stdout) console.log('yt-dlp stdout:', stdout);
+            if (stdout) console.log('yt-dlp stdout:', stdout);
 
             // Split into variables
             const [videoTitle, videoDirectUrl, videoThumbnail] = stdout.trim().split('||');
@@ -326,6 +326,8 @@ export default async function handler(req, res) {
                         lastPercent = percent;
                         lastUpdate = now;
                         updateProgress(percent, rowId);
+                        console.log(`Download progress: ${percent}%`);
+
                     }
                 }
             });
