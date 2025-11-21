@@ -50,6 +50,7 @@ export default async function handler(req, res) {
     const ytQuality = qualityMap[quality] || qualityMap.best;
 
     const updateProgress = async (progress, rowId) => {
+        console.log(progress, typeof progress);
         // update Supabase row
         const { error } = await supabase
             .from("download")
