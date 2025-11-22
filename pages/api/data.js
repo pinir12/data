@@ -50,7 +50,7 @@ export default async function handler(req, res) {
     const ytQuality = qualityMap[quality] || qualityMap.best;
 
     const updateProgress = async (progress, rowId) => {
-        console.log('update progess.... ',progress, typeof progress);
+        console.log('update progess.... ', progress, typeof progress);
         // update Supabase row
         const { error } = await supabase
             .from("download")
@@ -310,10 +310,6 @@ export default async function handler(req, res) {
                 }
             });
 
-
-            let lastPercent = 0;
-            let lastUpdate = Date.now();
-
             yt.stdout.on("data", (chunk) => {
                 downloadedBytes += chunk.length;
 
@@ -325,9 +321,10 @@ export default async function handler(req, res) {
                     if (percent >= lastPercent + 1 || now - lastUpdate > 5000) {
                         lastPercent = percent;
                         lastUpdate = now;
-                        updateProgress(percent, rowId);
-                        console.log(`Download progress: ${percent}%`);
-
+                        if (progress !== null) { // Check if progress is not null
+                            updateProgress(percent, rowId);
+                            console.log(`Download progress: ${percent}%`);
+                        }
                     }
                 }
             });
@@ -338,7 +335,7 @@ export default async function handler(req, res) {
 
             yt.on("close", (code) => {
                 console.log(`yt-dlp finished with code ${code}`);
-                // updateProgress(100, supabaseId); // Final progress 100%
+                updateProgress(99, rowId); // Final progress 99%
                 res.end();
             });
 
