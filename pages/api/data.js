@@ -313,7 +313,46 @@ export default async function handler(req, res) {
             let lastPercentSent = 0;
             let lastSendTime = Date.now();
 
-            yt.stderr.on("data", (chunk) => {
+
+              yt.stderr.on("data", (chunk) => {
+                const text = chunk.toString().trim();
+                console.log("[stderr raw]", text);
+
+                // Split combined JSON objects into separate entries
+                const parts = text
+                    .replace(/}\s*{/g, "}|{|") // separate touching JSON objects
+                    .split("|")
+                    .map(s => s.trim())
+                    .filter(s => s.startsWith("{") && s.endsWith("}"));
+
+                for (const part of parts) {
+                    let parsed;
+                    try {
+                        parsed = JSON.parse(part);
+                    } catch (err) {
+                        console.log("JSON parse error:", err.message);
+                        continue;
+                    }
+
+                    const percent = parseFloat(parsed.percent.replace("%", "")) || 0;
+
+                    // --- RATE LIMITING ---
+                    const now = Date.now();
+                    const percentChange = percent - lastPercentSent;
+                    const timePassed = now - lastSendTime;
+
+                    if (percentChange >= 3 || timePassed >= 10000) {
+                        lastPercentSent = percent;
+                        lastSendTime = now;
+
+                        console.log(`Progress: ${percent}%`);
+                        updateProgress(percent, rowId); // only number sent
+                    }
+                }
+            });
+
+
+         /*   yt.stderr.on("data", (chunk) => {
                 const text = chunk.toString().trim();
                 const parts = text
                     .replace(/}\s*{/g, "}|{|")
@@ -357,6 +396,7 @@ export default async function handler(req, res) {
                     }
                 }
             });
+            */
 
             // Pipe actual video stream to response
             yt.stdout.pipe(res);
