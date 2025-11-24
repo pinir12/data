@@ -51,9 +51,11 @@ export default function Page() {
                 (payload) => {
                     if (payload.eventType === "UPDATE" && payload.new.id === rowId && payload.new.user_email == session.user.email) {
                         const updatedRow = payload.new;
-                        setProgress(updatedRow.progress);
+                        
                         if (updatedRow.progress == 100){
-                            setDownloadProgress({ status: 'complete', message: 'Your download is almost ready, please wait' });
+                            setDownloadProgress({ status: 'complete', message: 'Your download is almost ready, please wait.' });
+                        } else {
+                            setProgress(updatedRow.progress);
                         }
 
                     }
