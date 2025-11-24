@@ -313,65 +313,67 @@ export default async function handler(req, res) {
             let lastPercentSent = 0;
             let lastSendTime = Date.now();
 
-           yt.stderr.on("data", (chunk) => {
-    const text = chunk.toString().trim();
-    const parts = text
-        .replace(/}\s*{/g, "}|{|")
-        .split("|")
-        .map(s => s.trim())
-        .filter(s => s.startsWith("{") && s.endsWith("}"));
+            yt.stderr.on("data", (chunk) => {
+                const text = chunk.toString().trim();
+                const parts = text
+                    .replace(/}\s*{/g, "}|{|")
+                    .split("|")
+                    .map(s => s.trim())
+                    .filter(s => s.startsWith("{") && s.endsWith("}"));
 
-    for (const part of parts) {
-        let p;
-        try {
-            p = JSON.parse(part);
-        } catch (err) {
-            continue;
-        }
+                for (const part of parts) {
+                    let p;
+                    try {
+                        p = JSON.parse(part);
+                    } catch (err) {
+                        continue;
+                    }
 
-        const percent = parseFloat(p.percent.replace("%", "")) || 0;
-        const down = parseInt(p.down || 0, 10);
-        const total = p.total === "NA" ? null : parseInt(p.total, 10);
+                    const percent = parseFloat(p.percent.replace("%", "")) || 0;
+                    const down = parseInt(p.down || 0, 10);
+                    const total = p.total === "NA" ? null : parseInt(p.total, 10);
 
-        // --- Ignore fake 100% from m3u8 / metadata ---
-        if (percent === 100 && !total && down < 100_000) continue;
+                    // --- Ignore fake 100% from m3u8 / metadata ---
+                    if (percent === 100 && !total && down < 100_000) continue;
 
-        const now = Date.now();
-        const percentChange = percent - lastPercentSent;
-        const timePassed = now - lastSendTime;
+                    const now = Date.now();
+                    const percentChange = percent - lastPercentSent;
+                    const timePassed = now - lastSendTime;
 
-        // --- Update only if:
-        // 1) >=3% change
-        // 2) >=10s passed
-        // 3) percent is 100 and we have real total bytes
-        if (
-            percentChange >= 3 ||
-            timePassed >= 10000 ||
-            (percent === 100 && total)
-        ) {
-            lastPercentSent = percent;
-            lastSendTime = now;
+                    // --- Update only if:
+                    // 1) >=3% change
+                    // 2) >=10s passed
+                    // 3) percent is 100 and we have real total bytes
+                    if (
+                        percentChange >= 3 ||
+                        timePassed >= 10000 ||
+                        (percent === 100 && total)
+                    ) {
+                        lastPercentSent = percent;
+                        lastSendTime = now;
 
-            console.log(`Progress: ${percent}%`);
-            updateProgress(percent, rowId);
-        }
-    }
-});
+                        console.log(`Progress: ${percent}%`);
+                        updateProgress(percent, rowId);
+                    }
+                }
+            });
 
             // Pipe actual video stream to response
             yt.stdout.pipe(res);
 
-            // Close handler
-            yt.on("close", (code) => {
-                console.log(`yt-dlp finished with code ${code}`);
-                // updateProgress(99, rowId);
-                res.end();
+            yt.on('error', (err) => {
+                console.error('yt-dlp error:', err);
+                if (!res.headersSent) res.status(500).end();
+                else res.destroy();
             });
 
-            // Error handler
-            yt.on("error", (err) => {
-                console.error("yt-dlp error:", err);
-                if (!res.headersSent) res.status(500).end();
+            yt.stdout.on('error', (err) => {
+                console.error('yt-dlp stdout error:', err);
+                res.destroy();
+            });
+
+            yt.on("close", (code) => {
+                console.log(`yt-dlp finished with code ${code}`);
             });
 
 
