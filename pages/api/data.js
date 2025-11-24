@@ -311,26 +311,32 @@ export default async function handler(req, res) {
 
             // Handle progress updates from stderr
             yt.stderr.on("data", (chunk) => {
-                const line = chunk.toString().trim();
-                console.log("[stderr]", line);             // Log EVERYTHING from stderr
+                const text = chunk.toString().trim();
+                console.log("[stderr raw]", text);
 
-                // Only process JSON lines
-                if (!line.startsWith("{")) return;
+                // Split into individual JSON fragments
+                const parts = text
+                    .replace(/}\s*{/g, "}|{|") // sanitize adjacent JSON objects
+                    .split("|")
+                    .map(s => s.trim())
+                    .filter(s => s.startsWith("{") && s.endsWith("}"));
 
-                try {
-                    const p = JSON.parse(line);
+                for (const json of parts) {
+                    try {
+                        const p = JSON.parse(json);
 
-                    const percent = parseFloat(p.percent.replace("%", "")) || 0;
-                    const downloaded = parseInt(p.down || 0, 10);
-                    const total = parseInt(p.total || 0, 10);
+                        const percent = parseFloat(p.percent.replace("%", "")) || 0;
+                        const downloaded = parseInt(p.down || 0, 10);
+                        const total = parseInt(p.total || 0, 10); // may be NA → NaN
 
-                    console.log(
-                        `Progress: ${percent}% | Downloaded: ${downloaded} bytes | Total: ${total} bytes`
-                    );
+                        console.log(
+                            `Progress: ${percent}% | Downloaded: ${downloaded} bytes | Total: ${total} bytes`
+                        );
 
-                    updateProgress(percent, rowId);
-                } catch (err) {
-                    console.log("JSON parse error:", err);
+                        updateProgress(percent, rowId);
+                    } catch (e) {
+                        console.log("JSON parse error:", e);
+                    }
                 }
             });
 
