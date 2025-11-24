@@ -527,7 +527,7 @@ export default function Page() {
                             {/* Download Progress Display (only for startDownload) */}
                             {downloadProgress.status !== 'idle' && (
                                 <div className="mt-6 w-full flex flex-col items-center p-4 bg-blue-50 rounded-lg shadow-inner border border-blue-200">
-                                    <p className="text-sm text-blue-800 mb-2 font-medium text-center">{progress < 100 ? downloadProgress.message :'Your download is almost ready, please wait.' /*need to improve this, put back in state*/}</p>
+                                    <p className="text-sm text-blue-800 mb-2 font-medium text-center">{downloadProgress.message }</p>
                                     {downloadProgress.status !== 'error' && (
                                         <div className="w-full bg-blue-200 rounded-full h-4 relative overflow-hidden">
                                             <div
