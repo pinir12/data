@@ -291,74 +291,65 @@ export default async function handler(req, res) {
 
             console.log(`Starting file download: ${headerSafeFilename}`);
 
+
             // --- Step 3: Spawn yt-dlp for live streaming ---
-            // Force progress output so your existing stderr parsing works
+            // Progress sent to stderr, video sent to stdout
             const yt = spawn('yt-dlp', [
                 '-f', ytQuality,
                 '--cookies', cookies_path,
 
-                '--newline',               // ensures progress lines flush immediately
-                '--progress',              // force progress even when piping
-                "--progress-template",
-                '{"percent":%(progress._percent_str)s}',
+                '--newline',                 // flush progress lines immediately
+                '--progress',                // force progress output
+                '--progress-template',
+                '{"percent":"%(progress._percent_str)s","down":"%(progress.downloaded_bytes)s","total":"%(progress.total_bytes)s"}',
 
-                '-o', '-',                 // Output video to stdout (stream)
+                '-o', '-',                   // Stream video to stdout
                 videoId
             ]);
 
             updateProgress(0, rowId); // Initial progress 0%
 
-            let totalBytes = 0;
-            let downloadedBytes = 0;
-
-            // capture total size from yt-dlp logs (stderr)
+            // Handle progress updates from stderr
             yt.stderr.on("data", (chunk) => {
-                const msg = chunk.toString();
+                const line = chunk.toString().trim();
+                console.log("[stderr]", line);             // Log EVERYTHING from stderr
 
-                // Your existing clen parser stays the same
-                const matches = [...msg.matchAll(/clen=(\d+)/g)];
-                for (const m of matches) {
-                    totalBytes += parseInt(m[1], 10);
-                }
+                // Only process JSON lines
+                if (!line.startsWith("{")) return;
 
-                if (matches.length > 0) {
-                    console.log("Total bytes:", totalBytes);
-                }
-            });
+                try {
+                    const p = JSON.parse(line);
 
-            // your existing byte progress calculation stays untouched
-            yt.stdout.on("data", (chunk) => {
-                downloadedBytes += chunk.length;
+                    const percent = parseFloat(p.percent.replace("%", "")) || 0;
+                    const downloaded = parseInt(p.down || 0, 10);
+                    const total = parseInt(p.total || 0, 10);
 
-                if (totalBytes > 0) {
-                    const percent = Math.floor((downloadedBytes / totalBytes) * 100);
-                    const now = Date.now();
+                    console.log(
+                        `Progress: ${percent}% | Downloaded: ${downloaded} bytes | Total: ${total} bytes`
+                    );
 
-                    // update if at least 1% more OR at least 5s passed
-                    if (percent >= lastPercent + 1 || now - lastUpdate > 5000) {
-                        lastPercent = percent;
-                        lastUpdate = now;
-                        if (progress !== null) {
-                            updateProgress(percent, rowId);
-                            console.log(`Download progress: ${percent}%`);
-                        }
-                    }
+                    updateProgress(percent, rowId);
+                } catch (err) {
+                    console.log("JSON parse error:", err);
                 }
             });
 
-            // Pipe actual video data to client
+            // Pipe actual video stream to response
             yt.stdout.pipe(res);
 
+            // Close handler
             yt.on("close", (code) => {
                 console.log(`yt-dlp finished with code ${code}`);
-                updateProgress(99, rowId); // Final progress 99%
+                updateProgress(99, rowId);
                 res.end();
             });
 
+            // Error handler
             yt.on("error", (err) => {
                 console.error("yt-dlp error:", err);
                 if (!res.headersSent) res.status(500).end();
             });
+
 
 
         } catch (error) {
