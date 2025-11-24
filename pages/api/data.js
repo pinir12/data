@@ -335,17 +335,29 @@ export default async function handler(req, res) {
                     }
 
                     const percent = parseFloat(parsed.percent.replace("%", "")) || 0;
+                    const down = parseInt(p.down || 0, 10);
+                    const total = p.total === "NA" ? null : parseInt(p.total, 10);
+
+                      // --- Ignore fake 100% from m3u8 / metadata ---
+                    if (percent === 100 && !total && down < 100_000) {
+                        console.log("Ignoring 100% progress");
+                        continue;
+                    };
 
                     // --- RATE LIMITING ---
                     const now = Date.now();
                     const percentChange = percent - lastPercentSent;
                     const timePassed = now - lastSendTime;
 
-                    if (percentChange >= 3 || timePassed >= 10000) {
+                  if (
+                        percentChange >= 3 ||
+                        timePassed >= 5000 ||
+                        (percent === 100 && total)
+                    )  {
                         lastPercentSent = percent;
                         lastSendTime = now;
 
-                        console.log(`Progress: ${percent}%`);
+                        console.log(`Updating progress: ${percent}%`);
                         updateProgress(percent, rowId); // only number sent
                     }
                 }
