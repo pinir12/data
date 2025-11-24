@@ -340,7 +340,7 @@ export default async function handler(req, res) {
                     const percentChange = percent - lastPercentSent;
                     const timePassed = now - lastSendTime;
 
-                    if (percentChange >= 3 || timePassed >= 10000) {
+                    if (percentChange >= 3 || timePassed >= 5000 || percent === 100) {
                         lastPercentSent = percent;
                         lastSendTime = now;
 
