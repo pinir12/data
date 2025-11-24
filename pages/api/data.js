@@ -280,7 +280,9 @@ export default async function handler(req, res) {
                 'Content-Disposition',
                 `attachment; filename="${headerSafeFilename}"; filename*=UTF-8''${encodeURIComponent(finalFilename)}`
             );
-            res.setHeader('Content-Type', `video/${metadata.ext}`);
+            let safeExt = (metadata.ext || "mp4").toString().trim().replace(/[^a-zA-Z0-9]/g, "");
+
+            res.setHeader("Content-Type", `video/${safeExt}`);
 
             console.log(`Starting file download: ${headerSafeFilename}`);
             // --- Step 3: Spawn yt-dlp for live streaming ---
