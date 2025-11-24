@@ -313,42 +313,50 @@ export default async function handler(req, res) {
             let lastPercentSent = 0;
             let lastSendTime = Date.now();
 
-            yt.stderr.on("data", (chunk) => {
-                const text = chunk.toString().trim();
-                console.log("[stderr raw]", text);
+           yt.stderr.on("data", (chunk) => {
+    const text = chunk.toString().trim();
+    const parts = text
+        .replace(/}\s*{/g, "}|{|")
+        .split("|")
+        .map(s => s.trim())
+        .filter(s => s.startsWith("{") && s.endsWith("}"));
 
-                // Split combined JSON objects into separate entries
-                const parts = text
-                    .replace(/}\s*{/g, "}|{|") // separate touching JSON objects
-                    .split("|")
-                    .map(s => s.trim())
-                    .filter(s => s.startsWith("{") && s.endsWith("}"));
+    for (const part of parts) {
+        let p;
+        try {
+            p = JSON.parse(part);
+        } catch (err) {
+            continue;
+        }
 
-                for (const part of parts) {
-                    let parsed;
-                    try {
-                        parsed = JSON.parse(part);
-                    } catch (err) {
-                        console.log("JSON parse error:", err.message);
-                        continue;
-                    }
+        const percent = parseFloat(p.percent.replace("%", "")) || 0;
+        const down = parseInt(p.down || 0, 10);
+        const total = p.total === "NA" ? null : parseInt(p.total, 10);
 
-                    const percent = parseFloat(parsed.percent.replace("%", "")) || 0;
+        // --- Ignore fake 100% from m3u8 / metadata ---
+        if (percent === 100 && !total && down < 100_000) continue;
 
-                    // --- RATE LIMITING ---
-                    const now = Date.now();
-                    const percentChange = percent - lastPercentSent;
-                    const timePassed = now - lastSendTime;
+        const now = Date.now();
+        const percentChange = percent - lastPercentSent;
+        const timePassed = now - lastSendTime;
 
-                    if (percentChange >= 3 || timePassed >= 5000 || percent === 100) {
-                        lastPercentSent = percent;
-                        lastSendTime = now;
+        // --- Update only if:
+        // 1) >=3% change
+        // 2) >=10s passed
+        // 3) percent is 100 and we have real total bytes
+        if (
+            percentChange >= 3 ||
+            timePassed >= 10000 ||
+            (percent === 100 && total)
+        ) {
+            lastPercentSent = percent;
+            lastSendTime = now;
 
-                        console.log(`Progress: ${percent}%`);
-                        updateProgress(percent, rowId); // only number sent
-                    }
-                }
-            });
+            console.log(`Progress: ${percent}%`);
+            updateProgress(percent, rowId);
+        }
+    }
+});
 
             // Pipe actual video stream to response
             yt.stdout.pipe(res);
