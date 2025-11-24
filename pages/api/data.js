@@ -310,32 +310,42 @@ export default async function handler(req, res) {
             updateProgress(0, rowId); // Initial progress 0%
 
             // Handle progress updates from stderr
+            let lastPercentSent = 0;
+            let lastSendTime = Date.now();
+
             yt.stderr.on("data", (chunk) => {
                 const text = chunk.toString().trim();
                 console.log("[stderr raw]", text);
 
-                // Split into individual JSON fragments
+                // Split combined JSON objects into separate entries
                 const parts = text
-                    .replace(/}\s*{/g, "}|{|") // sanitize adjacent JSON objects
+                    .replace(/}\s*{/g, "}|{|") // separate touching JSON objects
                     .split("|")
                     .map(s => s.trim())
                     .filter(s => s.startsWith("{") && s.endsWith("}"));
 
-                for (const json of parts) {
+                for (const part of parts) {
+                    let parsed;
                     try {
-                        const p = JSON.parse(json);
+                        parsed = JSON.parse(part);
+                    } catch (err) {
+                        console.log("JSON parse error:", err.message);
+                        continue;
+                    }
 
-                        const percent = parseFloat(p.percent.replace("%", "")) || 0;
-                        const downloaded = parseInt(p.down || 0, 10);
-                        const total = parseInt(p.total || 0, 10); // may be NA → NaN
+                    const percent = parseFloat(parsed.percent.replace("%", "")) || 0;
 
-                        console.log(
-                            `Progress: ${percent}% | Downloaded: ${downloaded} bytes | Total: ${total} bytes`
-                        );
+                    // --- RATE LIMITING ---
+                    const now = Date.now();
+                    const percentChange = percent - lastPercentSent;
+                    const timePassed = now - lastSendTime;
 
-                        updateProgress(percent, rowId);
-                    } catch (e) {
-                        console.log("JSON parse error:", e);
+                    if (percentChange >= 3 || timePassed >= 10000) {
+                        lastPercentSent = percent;
+                        lastSendTime = now;
+
+                        console.log(`Progress: ${percent}%`);
+                        updateProgress(percent, rowId); // only number sent
                     }
                 }
             });
@@ -346,7 +356,7 @@ export default async function handler(req, res) {
             // Close handler
             yt.on("close", (code) => {
                 console.log(`yt-dlp finished with code ${code}`);
-                updateProgress(99, rowId);
+                // updateProgress(99, rowId);
                 res.end();
             });
 

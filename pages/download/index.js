@@ -52,6 +52,10 @@ export default function Page() {
                     if (payload.eventType === "UPDATE" && payload.new.id === rowId && payload.new.user_email == session.user.email) {
                         const updatedRow = payload.new;
                         setProgress(updatedRow.progress);
+                        if (updatedRow.progress == 100){
+                            setDownloadProgress({ status: 'complete', message: 'Your download is almost ready, please wait' });
+                        }
+
                     }
                 }
             )
@@ -99,7 +103,7 @@ export default function Page() {
         setTitleCopied(false); // Reset title copied state
         setData(null); // Clear previous video data
         setRowId(null); // Clear previous row ID
-
+        setprogress(0);
 
         try {
             const response = await fetch(`/api/data?videoId=${encodeURIComponent(videoId)}&type=url`);
@@ -193,7 +197,7 @@ export default function Page() {
             window.URL.revokeObjectURL(url); // Release the temporary URL
 
             setDownloadProgress({ status: 'complete', message: 'File downloaded! Check your downloads folder.' });
-            setProgress(100);
+            //setProgress(100);
 
 
         } catch (err) {
