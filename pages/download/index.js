@@ -103,7 +103,7 @@ export default function Page() {
         setTitleCopied(false); // Reset title copied state
         setData(null); // Clear previous video data
         setRowId(null); // Clear previous row ID
-        setprogress(0);
+        setProgress(0);
 
         try {
             const response = await fetch(`/api/data?videoId=${encodeURIComponent(videoId)}&type=url`);
