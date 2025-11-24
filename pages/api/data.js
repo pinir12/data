@@ -280,18 +280,29 @@ export default async function handler(req, res) {
                 'Content-Disposition',
                 `attachment; filename="${headerSafeFilename}"; filename*=UTF-8''${encodeURIComponent(finalFilename)}`
             );
-            let safeExt = (metadata.ext || "mp4").toString().trim().replace(/[^a-zA-Z0-9]/g, "");
+
+            // sanitize extension (fixes header crash)
+            let safeExt = (metadata.ext || "mp4")
+                .toString()
+                .trim()
+                .replace(/[^a-zA-Z0-9]/g, "");
 
             res.setHeader("Content-Type", `video/${safeExt}`);
 
             console.log(`Starting file download: ${headerSafeFilename}`);
+
             // --- Step 3: Spawn yt-dlp for live streaming ---
+            // Force progress output so your existing stderr parsing works
             const yt = spawn('yt-dlp', [
                 '-f', ytQuality,
                 '--cookies', cookies_path,
+
+                '--newline',               // ensures progress lines flush immediately
+                '--progress',              // force progress even when piping
                 "--progress-template",
                 '{"percent":%(progress._percent_str)s}',
-                '-o', '-', // Output to stdout (stream)
+
+                '-o', '-',                 // Output video to stdout (stream)
                 videoId
             ]);
 
@@ -303,15 +314,19 @@ export default async function handler(req, res) {
             // capture total size from yt-dlp logs (stderr)
             yt.stderr.on("data", (chunk) => {
                 const msg = chunk.toString();
+
+                // Your existing clen parser stays the same
                 const matches = [...msg.matchAll(/clen=(\d+)/g)];
                 for (const m of matches) {
                     totalBytes += parseInt(m[1], 10);
                 }
+
                 if (matches.length > 0) {
                     console.log("Total bytes:", totalBytes);
                 }
             });
 
+            // your existing byte progress calculation stays untouched
             yt.stdout.on("data", (chunk) => {
                 downloadedBytes += chunk.length;
 
@@ -323,7 +338,7 @@ export default async function handler(req, res) {
                     if (percent >= lastPercent + 1 || now - lastUpdate > 5000) {
                         lastPercent = percent;
                         lastUpdate = now;
-                        if (progress !== null) { // Check if progress is not null
+                        if (progress !== null) {
                             updateProgress(percent, rowId);
                             console.log(`Download progress: ${percent}%`);
                         }
@@ -331,8 +346,7 @@ export default async function handler(req, res) {
                 }
             });
 
-
-            // Pipe the actual data to response
+            // Pipe actual video data to client
             yt.stdout.pipe(res);
 
             yt.on("close", (code) => {
