@@ -335,8 +335,8 @@ export default async function handler(req, res) {
                     }
 
                     const percent = parseFloat(parsed.percent.replace("%", "")) || 0;
-                    const down = parseInt(p.down || 0, 10);
-                    const total = p.total === "NA" ? null : parseInt(p.total, 10);
+                    const down = parseInt(parsed.down || 0, 10);
+                    const total = parsed.total === "NA" ? null : parseInt(parsed.total, 10);
 
                       // --- Ignore fake 100% from m3u8 / metadata ---
                     if (percent === 100 && !total && down < 100_000) {
