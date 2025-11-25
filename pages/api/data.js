@@ -342,8 +342,7 @@ export default async function handler(req, res) {
 
             yt.stderr.on("data", (chunk) => {
                 const text = chunk.toString().trim();
-                console.log("[stderr raw]", text);
-
+            
                 // Split combined JSON objects into separate entries
                 const parts = text
                     .replace(/}\s*{/g, "}|{|") // separate touching JSON objects
@@ -382,8 +381,6 @@ export default async function handler(req, res) {
                     ) {
                         lastPercentSent = percent;
                         lastSendTime = now;
-
-                        console.log(`Updating progress: ${percent}%`);
                         updateProgress(percent, rowId); // only number sent
                     }
                 }
