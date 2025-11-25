@@ -27,6 +27,8 @@ export default function Page() {
     const [bypassCheck, setBypassCheck] = useState('');
     const [playVideo, setPlayVideo] = useState(false);
     const [quality, setQuality] = useState('best');
+    const [errorReportLoading, setErrorReportLoading] = useState(false);
+    const [fullErrorMessage, setFullErrorMessage] = useState('');
 
     const [rowId, setRowId] = useState(null);
     const [progress, setProgress] = useState(0);
@@ -128,6 +130,7 @@ export default function Page() {
             const errorString = error.toString();
             //console.error("Error fetching video data:", error);
             console.error(error);
+            setFullErrorMessage(error);
             if (errorString.includes('error403')) {
                 setErrorMessage(`Your account is not active`);
             } else {
@@ -198,6 +201,7 @@ export default function Page() {
 
         } catch (err) {
             console.error("Download error:", err);
+            setFullErrorMessage(err);
             setErrorMessage(`Video download failed. Please try again later`);
             setDownloadProgress({ status: 'error', message: `Download failed` }); // removed ${err.message}
             setProgress(0);
@@ -298,6 +302,31 @@ export default function Page() {
     const handleQualityChange = (e) => {
         setQuality(e.target.value.trim());
     };
+
+
+
+     const reportError = async () => {
+        setErrorReportLoading(true);
+
+        try {
+            const response = await fetch(`/api/data?error=1`, { 
+                method: "POST",
+                body: fullErrorMessage,
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed with status ${response.status}`);
+            }
+
+            setErrorReportLoading(false)
+            setErrorMessage('Thank you. Your issue has been shared.')
+
+        } catch (error) {
+            console.error('Error sending message:', error);
+            setErrorReportLoading(false);
+        }
+    };
+
 
 
     if (status === "loading") return (
@@ -424,9 +453,23 @@ export default function Page() {
                     </div>
 
                     {/* Error Message Display */}
-                    <span className="h-8 text-red-500 text-center w-full max-w-xl px-1 text-xs my-2">
-                        {!data && errorMessage && <p className="">{errorMessage}</p>}
-                    </span>
+                    <div className="min-h-8 text-red-500 text-center w-full max-w-xl px-1 text-xs my-2 h-96">
+                        {!data && errorMessage && 
+                            <div className="h-auto flex flex-col items-center">
+                                <p className="">{'errorMessage'}</p>
+                                <span className="text-gray-600 border border-gray-200 rounded p-2 m-2 w-fit flex flex-col items-center gap-y-2">
+                                    Does the site need a fix? Let me know
+                                    <span className="bg-gray-200 border-gray-300 border rounded cursor-pointer max-h-7 px-3 py-1 w-fit text-gray-800"
+                                    onClick={reportError}>
+                                        {errorReportLoading ?  <Spinner size={5} bg={'text-slate-300'} fill={'fill-white'} /> :
+                                        'Send message' }
+                                    </span>
+                                </span>
+
+                            </div>
+
+                        }
+                    </div>
 
 
 
@@ -527,7 +570,7 @@ export default function Page() {
                             {/* Download Progress Display (only for startDownload) */}
                             {downloadProgress.status !== 'idle' && (
                                 <div className="mt-6 w-full flex flex-col items-center p-4 bg-blue-50 rounded-lg shadow-inner border border-blue-200">
-                                    <p className="text-sm text-blue-800 mb-2 font-medium text-center">{downloadProgress.message }</p>
+                                    <p className="text-sm text-blue-800 mb-2 font-medium text-center">{downloadProgress.message}</p>
                                     {downloadProgress.status !== 'error' && (
                                         <div className="w-full bg-blue-200 rounded-full h-4 relative overflow-hidden">
                                             <div

@@ -8,6 +8,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Resend } from 'resend';
 import { videoDownloaded } from "../../Components/EmailTemplates/videoDownloaded";
 import { admin } from "../../Components/EmailTemplates/admin";
+import { error } from '../../Components/EmailTemplates/error';
 
 
 // redo whole get count, jut one db call, update count +1 if poss, select new count from and save to var
@@ -19,6 +20,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function handler(req, res) {
 
@@ -63,10 +65,33 @@ export default async function handler(req, res) {
     }
 
 
+
     // --- Authentication Check ---
     if (!session) {
         console.log('error: Unauthorized')
         return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+        if (req.query.error == 1) {
+         console.log('error report')
+        try {
+
+            await resend.emails.send({
+                from: 'PiniR <mail@pinir.co.uk>',
+                to: 'PiniR <mail@pinir.co.uk>',
+                subject: `Download Error Report`,
+                 react: error({ error: req.body, name: session.user.name }), 
+            });
+
+            res.status(200).json({ data: 'Message sent successfully' })
+
+        }
+        catch (error) {
+            console.error('Error:', error);
+            const errorMessage = error.message;
+            res.status(500).json({ error: errorMessage });
+        }
+
     }
 
     // --- Input Validation ---
@@ -146,7 +171,7 @@ export default async function handler(req, res) {
             const name = session.user.name;
             const firstName = name.split(" ")[0];
 
-            const resend = new Resend(process.env.RESEND_API_KEY);
+
             await resend.emails.send({
                 from: 'PiniR <mail@pinir.co.uk>',
                 to: [session.user.email],
@@ -314,7 +339,7 @@ export default async function handler(req, res) {
             let lastSendTime = Date.now();
 
 
-              yt.stderr.on("data", (chunk) => {
+            yt.stderr.on("data", (chunk) => {
                 const text = chunk.toString().trim();
                 console.log("[stderr raw]", text);
 
@@ -338,7 +363,7 @@ export default async function handler(req, res) {
                     const down = parseInt(parsed.down || 0, 10);
                     const total = parsed.total === "NA" ? null : parseInt(parsed.total, 10);
 
-                      // --- Ignore fake 100% from m3u8 / metadata ---
+                    // --- Ignore fake 100% from m3u8 / metadata ---
                     if (percent === 100 && !total && down < 100_000) {
                         console.log("Ignoring 100% progress");
                         continue;
@@ -349,11 +374,11 @@ export default async function handler(req, res) {
                     const percentChange = percent - lastPercentSent;
                     const timePassed = now - lastSendTime;
 
-                  if (
+                    if (
                         percentChange >= 3 ||
                         timePassed >= 5000 ||
                         (percent === 100 && total)
-                    )  {
+                    ) {
                         lastPercentSent = percent;
                         lastSendTime = now;
 
@@ -364,51 +389,51 @@ export default async function handler(req, res) {
             });
 
 
-         /*   yt.stderr.on("data", (chunk) => {
-                const text = chunk.toString().trim();
-                const parts = text
-                    .replace(/}\s*{/g, "}|{|")
-                    .split("|")
-                    .map(s => s.trim())
-                    .filter(s => s.startsWith("{") && s.endsWith("}"));
-
-                for (const part of parts) {
-                    let p;
-                    try {
-                        p = JSON.parse(part);
-                    } catch (err) {
-                        continue;
-                    }
-
-                    const percent = parseFloat(p.percent.replace("%", "")) || 0;
-                    const down = parseInt(p.down || 0, 10);
-                    const total = p.total === "NA" ? null : parseInt(p.total, 10);
-
-                    // --- Ignore fake 100% from m3u8 / metadata ---
-                    if (percent === 100 && !total && down < 100_000) continue;
-
-                    const now = Date.now();
-                    const percentChange = percent - lastPercentSent;
-                    const timePassed = now - lastSendTime;
-
-                    // --- Update only if:
-                    // 1) >=3% change
-                    // 2) >=10s passed
-                    // 3) percent is 100 and we have real total bytes
-                    if (
-                        percentChange >= 3 ||
-                        timePassed >= 10000 ||
-                        (percent === 100 && total)
-                    ) {
-                        lastPercentSent = percent;
-                        lastSendTime = now;
-
-                        console.log(`Progress: ${percent}%`);
-                        updateProgress(percent, rowId);
-                    }
-                }
-            });
-            */
+            /*   yt.stderr.on("data", (chunk) => {
+                   const text = chunk.toString().trim();
+                   const parts = text
+                       .replace(/}\s*{/g, "}|{|")
+                       .split("|")
+                       .map(s => s.trim())
+                       .filter(s => s.startsWith("{") && s.endsWith("}"));
+   
+                   for (const part of parts) {
+                       let p;
+                       try {
+                           p = JSON.parse(part);
+                       } catch (err) {
+                           continue;
+                       }
+   
+                       const percent = parseFloat(p.percent.replace("%", "")) || 0;
+                       const down = parseInt(p.down || 0, 10);
+                       const total = p.total === "NA" ? null : parseInt(p.total, 10);
+   
+                       // --- Ignore fake 100% from m3u8 / metadata ---
+                       if (percent === 100 && !total && down < 100_000) continue;
+   
+                       const now = Date.now();
+                       const percentChange = percent - lastPercentSent;
+                       const timePassed = now - lastSendTime;
+   
+                       // --- Update only if:
+                       // 1) >=3% change
+                       // 2) >=10s passed
+                       // 3) percent is 100 and we have real total bytes
+                       if (
+                           percentChange >= 3 ||
+                           timePassed >= 10000 ||
+                           (percent === 100 && total)
+                       ) {
+                           lastPercentSent = percent;
+                           lastSendTime = now;
+   
+                           console.log(`Progress: ${percent}%`);
+                           updateProgress(percent, rowId);
+                       }
+                   }
+               });
+               */
 
             // Pipe actual video stream to response
             yt.stdout.pipe(res);
