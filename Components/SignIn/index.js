@@ -32,7 +32,7 @@ const handleSignin = () => {
   return (
 <>
      <Head>
-                  <title>Sign in</title>
+                  <title>Download</title>
       
             </Head>
     <div className={`bg-gradient-to-r from-rose-300 via-pink-00 to-fuchsia-300 `}> 
