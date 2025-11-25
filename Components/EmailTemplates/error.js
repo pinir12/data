@@ -47,7 +47,7 @@ export const error = ({ name, error }) => (
 
                             <div className="bg-gray-50 p-[16px] rounded-[6px]">
                                 <Text className="text-[14px] text-gray-600 mb-[4px] font-medium">
-                                    Sunbmitted at
+                                    Submitted at
                                 </Text>
                                 <Text className="text-[16px] text-gray-900 mb-[0px] font-semibold">
                                     {new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' })}
