@@ -29,6 +29,7 @@ export default function Page() {
     const [quality, setQuality] = useState('best');
     const [errorReportLoading, setErrorReportLoading] = useState(false);
     const [fullErrorMessage, setFullErrorMessage] = useState('');
+    const [showErrorReportButton, setShowErrorReportButton] = useState(false);
 
     const [rowId, setRowId] = useState(null);
     const [progress, setProgress] = useState(0);
@@ -98,6 +99,8 @@ export default function Page() {
     const fetchVideoData = async (videoId, playNow) => {
         setButtonLoading(true); // Show spinner on the "Go" button
         setErrorMessage(""); // Clear previous errors
+        setFullErrorMessage('');
+        setShowErrorReportButton(false);
         setTitleCopied(false); // Reset title copied state
         setData(null); // Clear previous video data
         setRowId(null); // Clear previous row ID
@@ -134,7 +137,8 @@ export default function Page() {
             if (errorString.includes('error403')) {
                 setErrorMessage(`Your account is not active`);
             } else {
-                setErrorMessage(`Video download failed. Please try again later`);
+                setErrorMessage(`Video download failed. Please try again later.`);
+                setShowErrorReportButton(true);
             }
         } finally {
             setButtonLoading(false); // Hide spinner on the "Go" button
@@ -147,6 +151,8 @@ export default function Page() {
     const startDownload = async (videoId) => {
 
         setErrorMessage(""); // Clear previous errors
+        setFullErrorMessage('');
+        setShowErrorReportButton(false);
         setTitleCopied(false); // Reset title copied state
         // Set download progress to preparing state
         setDownloadProgress({ status: 'preparing', message: 'Preparing file for download...' });
@@ -202,7 +208,8 @@ export default function Page() {
         } catch (err) {
             console.error("Download error:", err);
             setFullErrorMessage(err);
-            setErrorMessage(`Video download failed. Please try again later`);
+            setErrorMessage(`Video download failed. Please try again later.`);
+            setShowErrorReportButton(true);
             setDownloadProgress({ status: 'error', message: `Download failed` }); // removed ${err.message}
             setProgress(0);
         } finally {
@@ -278,6 +285,8 @@ export default function Page() {
     const handleClear = () => {
         setInputUrl("");
         setErrorMessage("");
+        setFullErrorMessage('');
+        setShowErrorReportButton(false);
         setTitleCopied(false)
         setData(null);
         // Reset downloadProgress when clearing everything
@@ -305,11 +314,11 @@ export default function Page() {
 
 
 
-     const reportError = async () => {
+    const reportError = async () => {
         setErrorReportLoading(true);
 
         try {
-            const response = await fetch(`/api/data?error=1`, { 
+            const response = await fetch(`/api/data?error=1`, {
                 method: "POST",
                 body: fullErrorMessage,
             });
@@ -320,6 +329,7 @@ export default function Page() {
 
             setErrorReportLoading(false)
             setErrorMessage('Thank you. Your issue has been shared.')
+            setShowErrorReportButton(false);
 
         } catch (error) {
             console.error('Error sending message:', error);
@@ -454,18 +464,19 @@ export default function Page() {
 
                     {/* Error Message Display */}
                     <div className="min-h-8 text-red-500 text-center w-full max-w-xl px-1 text-xs my-2 h-96">
-                        {!data && errorMessage && 
+                        {!data && errorMessage &&
                             <div className="h-auto flex flex-col items-center">
-                                <p className="">{'errorMessage'}</p>
-                                <span className="text-gray-600 border border-gray-200 rounded p-2 m-2 w-fit flex flex-col items-center gap-y-2">
-                                    Does the site need a fix? Let me know
-                                    <span className="bg-gray-200 border-gray-300 border rounded cursor-pointer max-h-7 px-3 py-1 w-fit text-gray-800"
-                                    onClick={reportError}>
-                                        {errorReportLoading ?  <Spinner size={5} bg={'text-slate-300'} fill={'fill-white'} /> :
-                                        'Send message' }
+                                <p className="">{errorMessage}</p>
+                                {showErrorReportButton &&
+                                    <span className="text-gray-600 border border-gray-200 rounded p-2 m-2 w-fit flex flex-col items-center gap-y-2 shadow">
+                                        Does the site need a fix? Let me know
+                                        <button className="bg-gray-200 border-gray-300 border rounded cursor-pointer w-28 max-h-7 px-3 py-1 text-gray-800 flex justify-center"
+                                            onClick={reportError} disabled={errorReportLoading} >
+                                            {errorReportLoading ? <Spinner size={5} bg={'text-slate-300'} fill={'fill-slate-500'} /> :
+                                                'Send message'}
+                                        </button>
                                     </span>
-                                </span>
-
+                                }
                             </div>
 
                         }

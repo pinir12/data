@@ -40,3 +40,5 @@ next-env.d.ts
 .vscode
 .gitignore
 
+package-lock.json
+package-lock.json

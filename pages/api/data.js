@@ -72,15 +72,16 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-        if (req.query.error == 1) {
-         console.log('error report')
+    if (req.query.error == 1) {
+        const currentDate = new Date();
+        const formattedDate = currentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
         try {
 
             await resend.emails.send({
                 from: 'PiniR <mail@pinir.co.uk>',
                 to: 'PiniR <mail@pinir.co.uk>',
-                subject: `Download Error Report`,
-                 react: error({ error: req.body, name: session.user.name }), 
+                subject: `Download Error Report - ${formattedDate}`,
+                react: error({ error: req.body, name: session.user.name }),
             });
 
             res.status(200).json({ data: 'Message sent successfully' })
