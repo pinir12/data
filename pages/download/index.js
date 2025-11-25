@@ -101,6 +101,7 @@ export default function Page() {
         setErrorMessage(""); // Clear previous errors
         setFullErrorMessage('');
         setShowErrorReportButton(false);
+        setDownloadProgress({ status: 'idle', message: '' });
         setTitleCopied(false); // Reset title copied state
         setData(null); // Clear previous video data
         setRowId(null); // Clear previous row ID
@@ -153,6 +154,7 @@ export default function Page() {
         setErrorMessage(""); // Clear previous errors
         setFullErrorMessage('');
         setShowErrorReportButton(false);
+        setDownloadProgress({ status: 'idle', message: '' });
         setTitleCopied(false); // Reset title copied state
         // Set download progress to preparing state
         setDownloadProgress({ status: 'preparing', message: 'Preparing file for download...' });
@@ -230,6 +232,7 @@ export default function Page() {
     // Processes the input URL or video ID (only triggers fetchVideoData)
     const handleGoClick = (url = null, playNow = false) => {
         setErrorMessage("");
+        setDownloadProgress({ status: 'idle', message: '' });
         setTitleCopied(false); // Reset title copied state
         setData(null);
 
@@ -287,6 +290,7 @@ export default function Page() {
         setErrorMessage("");
         setFullErrorMessage('');
         setShowErrorReportButton(false);
+        setDownloadProgress({ status: 'idle', message: '' });
         setTitleCopied(false)
         setData(null);
         // Reset downloadProgress when clearing everything
