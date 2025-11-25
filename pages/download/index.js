@@ -60,6 +60,7 @@ export default function Page() {
             )
             .subscribe((status, err) => {
                 console.log("🔌 STATUS:", status, err ?? "");
+                setDownloadProgress({ status: 'preparing', message: 'Proccessing and downloading video file' }); //is this best place for this update?
             });
 
         return () => {
@@ -154,16 +155,11 @@ export default function Page() {
         setErrorMessage(""); // Clear previous errors
         setFullErrorMessage('');
         setShowErrorReportButton(false);
-        setDownloadProgress({ status: 'idle', message: '' });
         setTitleCopied(false); // Reset title copied state
         // Set download progress to preparing state
         setDownloadProgress({ status: 'preparing', message: 'Preparing file for download...' });
         setProgress(0);
         setDownloadButtonLoading(true); // Show spinner on the "Start Download" button
-
-
-
-
 
 
         try {
@@ -346,7 +342,7 @@ export default function Page() {
     if (status === "loading") return (
         <>
             <Head>
-                <title>Signing in... </title>
+                <title>Download</title>
             </Head>
             <div className="w-full min-h-screen flex flex-col justify-center align-middle items-center">
                 <Spinner size={5} bg={'text-gray-400'} fill={'fill-white'} />

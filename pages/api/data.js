@@ -52,7 +52,6 @@ export default async function handler(req, res) {
     const ytQuality = qualityMap[quality] || qualityMap.best;
 
     const updateProgress = async (progress, rowId) => {
-        console.log('update progess.... ', progress, typeof progress);
         // update Supabase row
         const { error } = await supabase
             .from("download")
@@ -78,19 +77,19 @@ export default async function handler(req, res) {
         try {
 
             await resend.emails.send({
-                from: 'PiniR <mail@pinir.co.uk>',
+                from: 'Download Error <mail@pinir.co.uk>',
                 to: 'PiniR <mail@pinir.co.uk>',
                 subject: `Download Error Report - ${formattedDate}`,
                 react: error({ error: req.body, name: session.user.name }),
             });
 
-            res.status(200).json({ data: 'Message sent successfully' })
+            return res.status(200).json({ data: 'Message sent successfully' })
 
         }
         catch (error) {
             console.error('Error:', error);
             const errorMessage = error.message;
-            res.status(500).json({ error: errorMessage });
+            return res.status(500).json({ error: errorMessage });
         }
 
     }
@@ -142,9 +141,6 @@ export default async function handler(req, res) {
                     .from('download_users')
                     .select('count', { count: 'exact' })
                     .eq('email', userEmail);
-
-
-
 
                 if (countData) {
                     newCount = countData[0].count + 1;
@@ -295,9 +291,6 @@ export default async function handler(req, res) {
                     console.error("Error updating count:", updateError);
                     throw new Error('Error updating download count');
                 }
-
-
-                console.log(`Updated download record ID: ${rowId} as file_downloaded`);
             }
 
 
@@ -342,7 +335,7 @@ export default async function handler(req, res) {
 
             yt.stderr.on("data", (chunk) => {
                 const text = chunk.toString().trim();
-            
+
                 // Split combined JSON objects into separate entries
                 const parts = text
                     .replace(/}\s*{/g, "}|{|") // separate touching JSON objects
