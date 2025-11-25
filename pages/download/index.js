@@ -463,7 +463,7 @@ export default function Page() {
                     </div>
 
                     {/* Error Message Display */}
-                    <div className="min-h-8 text-red-500 text-center w-full max-w-xl px-1 text-xs my-2 h-96">
+                    <div className="min-h-8 text-red-500 text-center w-full max-w-xl px-1 text-xs my-2">
                         {!data && errorMessage &&
                             <div className="h-auto flex flex-col items-center">
                                 <p className="">{errorMessage}</p>
