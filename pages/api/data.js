@@ -205,7 +205,8 @@ export default async function handler(req, res) {
 
 
         try {
-            const combinedCmd = `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s"  -f 'best'   "${videoId}" --js-runtimes 'node'`;
+            //current command to get video direct link with node js runtime
+            const combinedCmd = `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s" -f 'best[protocol="https"]'   "${videoId}" --js-runtimes 'node'`;
 
             //--updated command to get m3u8 when mp4 etc not avilable-- const combinedCmd = `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s"  -f 'best'   "${videoId}"`;
             //--original command to get video file directly-- const combinedCmd =           `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s"  -f 'best[protocol="https"]'   "${videoId}"`;
