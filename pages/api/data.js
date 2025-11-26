@@ -205,10 +205,10 @@ export default async function handler(req, res) {
 
 
         try {
+            const combinedCmd = `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s"  -f 'best'   "${videoId}" --js-runtimes 'node'`;
 
-
-            const combinedCmd = `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s"  -f 'best'   "${videoId}"`;
-            // const combinedCmd = `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s"  -f 'best[protocol="https"]'   "${videoId}"`;
+            //--updated command to get m3u8 when mp4 etc not avilable-- const combinedCmd = `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s"  -f 'best'   "${videoId}"`;
+            //--original command to get video file directly-- const combinedCmd =           `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s"  -f 'best[protocol="https"]'   "${videoId}"`;
             const { stdout, stderr } = await execPromise(combinedCmd);
             if (stderr) console.error('yt-dlp stderr:', stderr);
             if (stdout) console.log('yt-dlp stdout:', stdout);
