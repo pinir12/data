@@ -60,7 +60,7 @@ export default function Page() {
             )
             .subscribe((status, err) => {
                 console.log("🔌 STATUS:", status, err ?? "");
-                setDownloadProgress({ status: 'preparing', message: 'Proccessing and downloading video file' }); //is this best place for this update?
+                setDownloadProgress({ status: 'preparing', message: 'Proccessing and downloading video file...' }); //is this best place for this update?
             });
 
         return () => {

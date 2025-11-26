@@ -359,7 +359,6 @@ export default async function handler(req, res) {
 
                     // --- Ignore fake 100% from m3u8 / metadata ---
                     if (percent === 100 && !total && down < 100_000) {
-                        console.log("Ignoring 100% progress");
                         continue;
                     };
 
