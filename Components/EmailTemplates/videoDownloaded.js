@@ -80,15 +80,9 @@ export const videoDownloaded = ({ title, name, count = 1, thumbnailUrl = 'https:
             </Text>
             
             <Text className="text-[16px] text-gray-700 mb-[24px]">
-              Thank you for using our service.
+              Thank you for using this service.
             </Text>
             
-            <Text className="text-[16px] text-gray-700 mb-[8px]">
-              Best regards,
-            </Text>
-            <Text className="text-[16px] text-gray-700 mb-[32px]">
-             Pini
-            </Text>
             
             <Section className="border-t border-gray-300 pt-[16px] text-[12px] text-gray-500">
               <Text className="m-0">
