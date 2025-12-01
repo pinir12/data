@@ -6,6 +6,7 @@ import Head from "next/head";
 import CopyToClipboard from "react-copy-to-clipboard";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import Link from "next/link";
 
 
 
@@ -388,6 +389,10 @@ export default function Page() {
                                         Play Video
                                     </button>
 
+                                    <Link href="/download/users"
+                                        className={`px-3 py-1 text-white rounded ${`bg-gray-400`}`}>
+                                        Users
+                                    </Link>
                                 </div>
                             )}
 
