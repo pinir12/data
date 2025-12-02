@@ -84,18 +84,7 @@ export const videoDownloaded = ({ title, name, count = 1, thumbnailUrl = 'https:
             </Text>
             
             
-            <Section className="border-t border-gray-300 pt-[16px] text-[12px] text-gray-500">
-              <Text className="m-0">
-                ©  {new Date().getFullYear()} {' '}
-                <Link 
-                href="https://pinir.co.uk/" 
-                className="underline"
-              >
-                
-                PiniR
-                </Link>. All rights reserved.
-              </Text>
-            </Section>
+           
           </Container>
         </Body>
       </Tailwind>
