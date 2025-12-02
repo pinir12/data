@@ -96,6 +96,33 @@ export default function Page() {
     }, [searchParams]);
 
 
+    const  sanitizeWindowsFilename = (name) => {
+  // Remove illegal characters
+  let sanitized = name.replace(/[<>:"/\\|?*\x00-\x1F]/g, "");
+
+  // Remove trailing dots/spaces
+  sanitized = sanitized.replace(/[. ]+$/, "");
+
+  // Trim leading/trailing spaces
+  sanitized = sanitized.trim();
+
+  // Replace control chars & keep reasonable length
+  sanitized = sanitized.substring(0, 255);
+
+  // Prevent reserved Windows device names
+  const reserved = [
+    "CON","PRN","AUX","NUL",
+    "COM1","COM2","COM3","COM4","COM5","COM6","COM7","COM8","COM9",
+    "LPT1","LPT2","LPT3","LPT4","LPT5","LPT6","LPT7","LPT8","LPT9"
+  ];
+
+  if (reserved.includes(sanitized.toUpperCase())) {
+    sanitized = `${sanitized}_`;
+  }
+
+  return sanitized || "untitled";
+}
+
 
     // Fetches video metadata (title and url for playback)
     const fetchVideoData = async (videoId, playNow) => {
@@ -497,9 +524,9 @@ export default function Page() {
 
                             <span className="flex flex-row items-center text-lg font-semibold text-gray-800">
 
-                                {data.title}
+                                {sanitizeWindowsFilename(data.title)}
                                 <div className="relative group px-1">
-                                    <CopyToClipboard text={data.title}>
+                                    <CopyToClipboard text={sanitizeWindowsFilename(data.title)}>
                                         <button
                                             onClick={() => { setTitleCopied(true) }}
                                             className="flex items-center justify-center p-1 rounded"
