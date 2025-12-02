@@ -119,6 +119,13 @@ export default function UserItem({ user, fetchUsers, isActive }) {
           )}
 
         </td>
+
+
+         <td className="p-3 px-5">
+          <span className="bg-transparent">{user.count}</span>
+        </td>
+
+
         <td className="p-3 px-5">
           <span className="bg-transparent capitalize">{user.role}</span>
         </td>
@@ -160,6 +167,9 @@ export default function UserItem({ user, fetchUsers, isActive }) {
             </div>
           </label>
         </td>
+
+
+
 
 
         <td className="p-3 px-5 flex justify-end">

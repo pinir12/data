@@ -42,14 +42,11 @@ export default async function handler(req, res) {
 
             }
 
-
-
-
             let query = supabase.from('download_users').select('*')
 
             try {
                 let { data: items, error } = await query
-                    .order('created_at', { ascending: false });
+                    .order('created_at', { ascending: true });
 
                 if (error) {
                     throw new Error(error.message);

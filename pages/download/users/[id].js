@@ -2,7 +2,8 @@
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import Spinner from '../../../Components/Spinner';
-import { signOut, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 
 
 export default function UserDetail() {
@@ -16,6 +17,8 @@ export default function UserDetail() {
   //add admin auth
   //add loading state for initial session check and for data loading
 
+  //check above 2, and check what happens when no data is returned or error fetching
+
 
   const data_ifneeded = [
 
@@ -24,7 +27,7 @@ export default function UserDetail() {
       "url": "KyuxhjNQrIQ",
       "created_at": "2025-07-29T09:26:47.171951+00:00",
       "file_downloaded": true,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -35,7 +38,7 @@ export default function UserDetail() {
       "url": "tCDvOQI3pco",
       "created_at": "2025-07-28T14:31:11.38385+00:00",
       "file_downloaded": false,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -46,7 +49,7 @@ export default function UserDetail() {
       "url": "tCDvOQI3pco",
       "created_at": "2025-07-28T14:29:17.23489+00:00",
       "file_downloaded": false,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -57,7 +60,7 @@ export default function UserDetail() {
       "url": "84BNaEVxLd8",
       "created_at": "2025-07-28T13:54:20.979506+00:00",
       "file_downloaded": true,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -68,7 +71,7 @@ export default function UserDetail() {
       "url": "cudEobK2TeQ",
       "created_at": "2025-07-28T08:51:50.027019+00:00",
       "file_downloaded": true,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -79,7 +82,7 @@ export default function UserDetail() {
       "url": "84BNaEVxLd8",
       "created_at": "2025-07-28T08:34:49.08298+00:00",
       "file_downloaded": true,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -90,7 +93,7 @@ export default function UserDetail() {
       "url": "84BNaEVxLd8",
       "created_at": "2025-07-28T08:16:49.700698+00:00",
       "file_downloaded": true,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -101,7 +104,7 @@ export default function UserDetail() {
       "url": "icPHcK_cCF4",
       "created_at": "2025-07-27T21:22:37.737891+00:00",
       "file_downloaded": false,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -112,7 +115,7 @@ export default function UserDetail() {
       "url": "icPHcK_cCF4",
       "created_at": "2025-07-27T21:18:27.84644+00:00",
       "file_downloaded": false,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -123,7 +126,7 @@ export default function UserDetail() {
       "url": "icPHcK_cCF4",
       "created_at": "2025-07-27T21:16:02.331094+00:00",
       "file_downloaded": false,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -134,7 +137,7 @@ export default function UserDetail() {
       "url": "Dq7g7VWgtd8",
       "created_at": "2025-07-27T21:06:41.51461+00:00",
       "file_downloaded": false,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -145,7 +148,7 @@ export default function UserDetail() {
       "url": "Pn3uX0eaB5k",
       "created_at": "2025-07-27T19:40:52.810406+00:00",
       "file_downloaded": false,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -156,7 +159,7 @@ export default function UserDetail() {
       "url": "Pn3uX0eaB5k",
       "created_at": "2025-07-27T19:39:44.379409+00:00",
       "file_downloaded": false,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -167,7 +170,7 @@ export default function UserDetail() {
       "url": "Pn3uX0eaB5k",
       "created_at": "2025-07-27T19:38:10.293185+00:00",
       "file_downloaded": false,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -178,7 +181,7 @@ export default function UserDetail() {
       "url": "Pn3uX0eaB5k",
       "created_at": "2025-07-27T19:36:44.1098+00:00",
       "file_downloaded": false,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -189,7 +192,7 @@ export default function UserDetail() {
       "url": "Pn3uX0eaB5k",
       "created_at": "2025-07-27T19:36:04.872274+00:00",
       "file_downloaded": true,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -200,7 +203,7 @@ export default function UserDetail() {
       "url": "QohH89Eu5iM",
       "created_at": "2025-07-27T16:03:56.345235+00:00",
       "file_downloaded": true,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -211,7 +214,7 @@ export default function UserDetail() {
       "url": "n1ssSYnyCjU",
       "created_at": "2025-07-25T08:55:37.813218+00:00",
       "file_downloaded": false,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -222,7 +225,7 @@ export default function UserDetail() {
       "url": "icPHcK_cCF4",
       "created_at": "2025-07-25T08:47:10.346551+00:00",
       "file_downloaded": false,
-      "download_users": {
+      "user": {
         "id": 1,
         "name": "admin",
         "email": "pinchosroth@gmail.com"
@@ -257,6 +260,7 @@ export default function UserDetail() {
       day: "numeric",
       hour: "numeric",
       minute: "numeric",
+      hour12: true,
     };
     return date.toLocaleDateString("en-GB", options);
   };
@@ -277,12 +281,22 @@ export default function UserDetail() {
         <div className='flex justify-center '>
           <div className='w-3/4 max-w-3/4 px-8 flex flex-col justify-center items-center'>
 
+            <div className='flex flex-row self-start text-gray-500 gap-x-1 text-sm'>
+              <Link href="/download" className=" hover:underline">
+                download
+              </Link>
+              /
+              <Link href="/download/users" className=" hover:underline">
+                users
+              </Link>
+            </div>
+
             <div className='my-8 flex flex-col self-start'>
-              {data.length > 0 && data.download_users && data.download_users.name ?
+              {data.length > 0 && data[0].user && data[0].user.name ?
                 (
                   <>
-                    <span className='font-bold capitalize'>{data[0].download_users.name}</span>
-                    <span className='text-gray-400 text-sm'>{data[0].download_users.email}</span>
+                    <span className='font-bold capitalize'>{data[0].user.name}</span>
+                    <span className='text-gray-400 text-sm'>{data[0].user.email}</span>
                   </>
                 )
                 :
@@ -299,14 +313,19 @@ export default function UserDetail() {
                     <tr className=" ">
                       <th className="text-left py-1 px-5 w-7/12">Title</th>
                       <th className="text-left py-1 px-5 w-3/12">Date</th>
-                      <th className="text-left py-1 px-5 w-1/12">D</th>
+                      <th className="text-left py-1 px-5 w-1/12">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+
+                      </th>
                     </tr>
 
                     {data.map((item, _index) => (
                       <tr className="border-b text-sm bg-gray-100"  >
                         <td className="p-3 px-5 ">
-                          <a href={`https://www.youtube.com/watch?v=${item.url}`}>
-                            <span className=" overflow-hidden text-ellipsis ">{item.video_title}</span>
+                          <a href={`https://www.youtube.com/watch?v=${item.url}`} target={"_blank"}>
+                            <span className=" truncate whitespace-nowrap overflow-hidden ">{item.video_title}</span>
                           </a>
                         </td>
 
@@ -315,7 +334,7 @@ export default function UserDetail() {
                         </td>
 
                         <td className="p-3 px-5 flex ">
-                          {item.file_downloaded && <span className='p-2 rounded-full bg-blue-600 shadow border border-blue-400'></span>}
+                          {item.file_downloaded && <span className='p-2 rounded-full bg-blue-600 shadow border border-blue-300'></span>}
                         </td>
                       </tr>
 
@@ -324,17 +343,12 @@ export default function UserDetail() {
                 </table>
               </div>
             ) :
-              (<div className='text-gray-400'>No video data available for {data.length > 0 && data.download_users.name.length > 0 ? data.download_users.name : 'user'}</div>)
+              (<div className='text-gray-400'>No video data available for {data.length > 0 && data.user.name.length > 0 ? data.user.name : 'user'}</div>)
             }
           </div>
         </div>)
         :
-        (<div className="p-24 justify-center flex flex-row">
-          <svg className=" w-6 h-6 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M19 5L4.99998 19M5.00001 5L19 19" stroke="red" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Not authorised
-        </div>)
+        (null)
       }
     </div>
   );
