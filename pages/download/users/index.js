@@ -11,6 +11,7 @@ import Link from "next/link";
 export default function UserDisplay() {
 
     //add success and error messages somewhere
+    //add user not found if id not exist. api.
 
     const [users, setUsers] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -109,12 +110,13 @@ export default function UserDisplay() {
             )}
             {userRole && userRole === 'admin' ?
                 <div className="text-gray-900 bg-white">
-                    <div className='flex flex-row self-start text-gray-500 mx-3'>
+                    <div className='flex flex-row items-center self-start text-gray-500 mx-3'>
                         <Link href="/download" className=" hover:underline text-sm">
                             download
                         </Link>
-
                     </div>
+
+
                     <div className="px-4 py-2 flex justify-between">
                         <h1 className="text-2xl">
                             Users
@@ -136,6 +138,20 @@ export default function UserDisplay() {
                                         <th className="text-left py-1 px-5">Role</th>
                                         <th className="text-left py-1 px-5">Active</th>
                                         <th></th>
+                                    </tr>
+
+
+                                    <tr className="border-b cursor-default text-sm bg-gray-100">
+                                        <td className="p-3 px-5">
+                                            <Link href={`/download/users/all`} >
+                                                <span className="bg-transparent">All users</span>
+                                            </Link>
+                                        </td>
+                                        <td className="p-3 px-5" ></td>
+                                        <td className="p-3 px-5"><span className="">Total?</span></td>
+                                        <td className="p-3 px-5"></td>
+                                        <td className="p-3 px-5"></td>
+                                        <td className="p-3 px-5"></td>
                                     </tr>
 
                                     {users.map((user, _index) => (
@@ -169,7 +185,7 @@ export default function UserDisplay() {
                                             />
                                         </th>
 
-<th></th>
+                                        <th></th>
 
                                         <th className="text-left p-3 font-normal">
 
@@ -254,7 +270,7 @@ export default function UserDisplay() {
 
 
                                 </tbody>
-                            </table>) : <div className=" px-44 py-12">Users not found</div>}
+                            </table>) : <div className=" px-44 py-12 text-gray-400">Users not found</div>}
                     </div>
                 </div>
                 :

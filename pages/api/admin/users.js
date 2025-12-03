@@ -16,14 +16,23 @@ export default async function handler(req, res) {
 
             if (req.query.id) {
                 const id = req.query.id;
+                let dbQuery = ''
 
-                const dbQuery = supabase
+                if (id == 'all') {
+                    dbQuery = supabase
+                        .from("download")
+                        .select("video_title, url, created_at, file_downloaded, user: download_users!inner(id, name)")
+                        .order('created_at', { ascending: false })
+                        .limit(50);
+                } else {
 
-                    .from("download")
-                    .select("video_title, url, created_at, file_downloaded, user: download_users!inner(id, name, email)")
-                    .eq("download_users.id", id)
-                    .order('created_at', { ascending: false })
-                    .limit(30);
+                    dbQuery = supabase
+                        .from("download")
+                        .select("video_title, url, created_at, file_downloaded, user: download_users!inner(id, name, email)")
+                        .eq("download_users.id", id)
+                        .order('created_at', { ascending: false })
+                        .limit(30);
+                }
                 try {
                     let { data: items, error } = await dbQuery;
 
@@ -32,7 +41,9 @@ export default async function handler(req, res) {
                     }
 
                     res.status(200).json(items); // Send the response only if successful
+
                 } catch (error) {
+
                     console.error(error);
                     res.status(500).json(`Error retrieving data: ${error.message}`); // Send the response only if there's an error
 
