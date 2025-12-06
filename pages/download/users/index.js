@@ -14,6 +14,7 @@ export default function UserDisplay() {
     //add user not found if id not exist. api.
 
     const [users, setUsers] = useState([]);
+    const [totalCount, setTotalCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [usersLoading, setUsersLoading] = useState(false);
 
@@ -46,7 +47,9 @@ export default function UserDisplay() {
             }
 
             const data = await response.json();
+            const userCountTotal = data.reduce((acc, user) => acc + (user.count || 0), 0);
             setUsers(data);
+            setTotalCount(userCountTotal); 
         } catch (error) {
             console.error('Error fetching data:', error);
             //  toast.error('Error fetching users. Try again.');
@@ -148,7 +151,7 @@ export default function UserDisplay() {
                                             </Link>
                                         </td>
                                         <td className="p-3 px-5" ></td>
-                                        <td className="p-3 px-5"><span className="">Total?</span></td>
+                                        <td className="p-3 px-5"><span className="">{totalCount}</span></td>
                                         <td className="p-3 px-5"></td>
                                         <td className="p-3 px-5"></td>
                                         <td className="p-3 px-5"></td>
