@@ -1,12 +1,6 @@
-
-
 export default function Switch({ action, status }) {
 
-  
-
-    const handleCheckboxChange = () => {
-        action(!status)
-    }
+    const handleCheckboxChange = () => action(!status)
 
     return (
         <div>
