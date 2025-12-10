@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import Spinner from "../../Components/Spinner"
 import SignIn from "../../Components/SignIn";
 import { signOut, useSession } from 'next-auth/react';
@@ -7,6 +7,7 @@ import CopyToClipboard from "react-copy-to-clipboard";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
+import Switch from "../../Components/Switch";
 
 
 
@@ -40,6 +41,7 @@ export default function Page() {
         message: ''
     });
 
+    const inputRef = useRef(null);
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -71,9 +73,11 @@ export default function Page() {
     }
 
 
+    useLayoutEffect(() => {
+        inputRef.current?.focus();
+    }, []);
 
-
-
+   
 
     useEffect(() => {
         const videoIdFromUrl = searchParams.get("id") || searchParams.get("url");
@@ -96,32 +100,32 @@ export default function Page() {
     }, [searchParams]);
 
 
-    const  sanitizeWindowsFilename = (name) => {
-  // Remove illegal characters
-  let sanitized = name.replace(/[<>:"/\\|?*\x00-\x1F]/g, "");
+    const sanitizeWindowsFilename = (name) => {
+        // Remove illegal characters
+        let sanitized = name.replace(/[<>:"/\\|?*\x00-\x1F]/g, "");
 
-  // Remove trailing dots/spaces
-  sanitized = sanitized.replace(/[. ]+$/, "");
+        // Remove trailing dots/spaces
+        sanitized = sanitized.replace(/[. ]+$/, "");
 
-  // Trim leading/trailing spaces
-  sanitized = sanitized.trim();
+        // Trim leading/trailing spaces
+        sanitized = sanitized.trim();
 
-  // Replace control chars & keep reasonable length
-  sanitized = sanitized.substring(0, 255);
+        // Replace control chars & keep reasonable length
+        sanitized = sanitized.substring(0, 255);
 
-  // Prevent reserved Windows device names
-  const reserved = [
-    "CON","PRN","AUX","NUL",
-    "COM1","COM2","COM3","COM4","COM5","COM6","COM7","COM8","COM9",
-    "LPT1","LPT2","LPT3","LPT4","LPT5","LPT6","LPT7","LPT8","LPT9"
-  ];
+        // Prevent reserved Windows device names
+        const reserved = [
+            "CON", "PRN", "AUX", "NUL",
+            "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+            "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+        ];
 
-  if (reserved.includes(sanitized.toUpperCase())) {
-    sanitized = `${sanitized}_`;
-  }
+        if (reserved.includes(sanitized.toUpperCase())) {
+            sanitized = `${sanitized}_`;
+        }
 
-  return sanitized || "untitled";
-}
+        return sanitized || "untitled";
+    }
 
 
     // Fetches video metadata (title and url for playback)
@@ -248,9 +252,7 @@ export default function Page() {
 
     // Handles Enter key press in the input field
     const handleKeyDown = (event) => {
-        if (event.key === "Enter") {
-            handleGoClick("");
-        }
+        event.key === "Enter" && handleGoClick("")
     };
 
     // Processes the input URL or video ID (only triggers fetchVideoData)
@@ -291,12 +293,12 @@ export default function Page() {
 
         if (videoId) {
             videoId = videoId.split("?")[0];
-            if (bypassCheck != 'bypass' && videoId.length !== 11) {
+            if (!bypassCheck && videoId.length !== 11) {
                 setErrorMessage("Invalid video ID");
                 return;
             } else {
                 setId(videoId);
-                if (directDownload == 'direct') {
+                if (directDownload) {
                     startDownload(videoId);
                 } else {
                     fetchVideoData(videoId, playNow);
@@ -321,6 +323,7 @@ export default function Page() {
         setDownloadProgress({ status: 'idle', message: '' });
         setProgress(0);
         setRowId(null);
+        inputRef.current.focus();
     };
 
     // Handles file/URL drop event
@@ -397,51 +400,61 @@ export default function Page() {
                             <span className="text-gray-600">Hi, {session.user.name.split(" ")[0]}!</span>
 
                             {session.user.role == 'admin' && (
-                                <div className="flex gap-x-2">
-                                    <button
-                                        className={`px-3 py-1 text-white rounded ${directDownload == 'direct' ? `bg-sky-500` : `bg-gray-400`}`}
-                                        onClick={() => { setDirectDownload(directDownload == '' ? 'direct' : '') }} >
-                                        File Download
-                                    </button>
+                                <div className="flex gap-x-4 px-3 py-1">
 
-                                    <button
-                                        className={`px-3 py-1 text-white rounded ${bypassCheck == 'bypass' ? `bg-green-500` : `bg-gray-400`}`}
-                                        onClick={() => { setBypassCheck(bypassCheck == '' ? 'bypass' : '') }} >
-                                        Bypass Checks
-                                    </button>
+                                    <div className="flex gap-x-1">
+                                        <span className={` text-slate-500 rounded`}>
+                                            Download
+                                        </span>
+                                        <Switch action={setDirectDownload} status={directDownload} />
+                                    </div>
 
-                                    <button
-                                        className={`px-3 py-1 text-white rounded ${playVideo ? `bg-rose-500` : `bg-gray-400`}`}
-                                        onClick={() => { setPlayVideo(!playVideo) }} >
-                                        Play Video
-                                    </button>
 
-                                    <Link href="/download/users"
-                                        className={`px-2 py-1 text-black rounded border-black border hover:bg-gray-200`}>
-                                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                    <div className="flex gap-x-1">
+                                        <span className={` text-slate-500 rounded`}>
+                                            Bypass
+                                        </span>
+                                        <Switch action={setBypassCheck} status={bypassCheck} />
+                                    </div>
 
-                                    </Link>
+                                    <div className="flex gap-x-1">
+                                        <span className={` text-slate-500 rounded`}>
+                                            Play
+                                        </span>
+                                        <Switch action={setPlayVideo} status={playVideo} />
+                                    </div>
+
+
                                 </div>
                             )}
 
 
-
-                            <span
-                                onClick={() => signOut()}
-                                className="bg-slate-500 hover:bg-gray-400 text-sm border border-slate-100 cursor-pointer rounded px-3 py-1 text-white transition duration-200 ease-in-out"
-                            >
-                                Sign Out
-                            </span>
+                            <div className="flex gap-x-1">
+                                {session.user.role == 'admin' && (
+                                    <Link href="/download/users"
+                                        className={`px-2 py-1 flex justify-center items-center text-white rounded border-slate-100 border bg-slate-500 hover:bg-gray-400`}>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                    </Link>
+                                )}
+                                <span
+                                    onClick={() => signOut()}
+                                    className="bg-slate-500 hover:bg-gray-400 text-sm border border-slate-100 cursor-pointer rounded px-3 py-1 text-white transition duration-200 ease-in-out"
+                                >
+                                    Sign Out
+                                </span>
+                            </div>
                         </span>
-                    </div>
+                    </div >
 
                     {/* Input and Go/Clear Buttons */}
-                    <div className="flex flex-row justify-center mt-8 w-full max-w-xl">
+                    < div className="flex flex-row justify-center mt-8 w-full max-w-xl" >
                         <input
                             className="bg-gray-100 border border-gray-400 focus:border-blue-500 rounded-l-lg flex-grow h-10 px-4 text-base outline-none shadow-sm transition duration-200 ease-in-out"
                             placeholder="Insert YouTube video URL or ID"
                             onChange={(e) => setInputUrl(e.target.value)}
                             value={inputUrl}
+                            ref={inputRef}
+                            type="text"
                             onKeyDown={handleKeyDown}
                             onDragEnter={handleClear}
                         />
@@ -493,10 +506,10 @@ export default function Page() {
                                 </svg>
                             </div>
                         </div>
-                    </div>
+                    </div >
 
                     {/* Error Message Display */}
-                    <div className="min-h-8 text-red-500 text-center w-full max-w-xl px-1 text-xs my-2">
+                    < div className="min-h-8 text-red-500 text-center w-full max-w-xl px-1 text-xs my-2" >
                         {!data && errorMessage &&
                             <div className="h-auto flex flex-col items-center">
                                 <p className="">{errorMessage}</p>
@@ -514,8 +527,6 @@ export default function Page() {
 
                         }
                     </div>
-
-
 
 
                     {/* Video Data and Download Section */}
@@ -589,9 +600,9 @@ export default function Page() {
                                         className="py-2 px-3 text-md rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                                     >
                                         <option value="best">Highest</option>
-                                        <option value="high">High (1080p)</option>
-                                        <option value="medium">Medium (720p)</option>
-                                        <option value="low">Low (480p)</option>
+                                        <option disabled value="high">High (1080p)</option>
+                                        <option disabled value="medium">Medium (720p)</option>
+                                        <option disabled value="low">Low (480p)</option>
                                     </select>
                                 </form>
                                 <div>
@@ -632,7 +643,8 @@ export default function Page() {
                                 </div>
                             )}
                         </div>
-                    )}
+                    )
+                    }
                 </div >
             </>
         );
