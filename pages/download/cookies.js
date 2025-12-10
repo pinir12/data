@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 export default function CookiesPage() {
     const { data: session } = useSession();
@@ -59,10 +60,15 @@ export default function CookiesPage() {
 
 
         return (
-            <div className='flex flex-col justify-center items-center p-8 w-full'>
+            <div className='flex flex-col justify-center items-center p-8 pt-2 w-full'>
                 <Head>
                     <title>Cookies</title>
                 </Head>
+                 <div className='flex flex-row items-center self-start text-gray-500 mb-3 mx-3'>
+                                        <Link href="/download" className=" hover:underline text-sm">
+                                            download
+                                        </Link>
+                                    </div>
                 <textarea className='h-96 w-full  border border-slate-400 p-3 rounded' value={content}
                     onChange={(e) => { setContent(e.target.value); setError(''); setSuccessMsg(''); }} />
                 <span className='w-full flex flex-row justify-start items-start my-3 gap-4'>
