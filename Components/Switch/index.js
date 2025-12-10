@@ -1,6 +1,7 @@
-export default function Switch({ action, status }) {
+export default function Switch({ action, status, custom = false }) {
 
-    const handleCheckboxChange = () => action(!status)
+    let handleCheckboxChange
+    custom ? handleCheckboxChange = action : handleCheckboxChange = () => action(!status);
 
     return (
         <div>
