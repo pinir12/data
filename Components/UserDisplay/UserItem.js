@@ -1,5 +1,6 @@
-import { useState, useContext } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import Switch from "../Switch";
 
 export default function UserItem({ user, fetchUsers, isActive }) {
 
@@ -132,7 +133,7 @@ export default function UserItem({ user, fetchUsers, isActive }) {
 
 
         <td className="p-3 px-5">
-          <label className='flex cursor-pointer select-none items-center'>
+         {/* <label className='flex cursor-pointer select-none items-center'>
             <div className='relative'>
               <input
                 type='checkbox'
@@ -165,7 +166,8 @@ export default function UserItem({ user, fetchUsers, isActive }) {
 
               </div>
             </div>
-          </label>
+          </label> */}
+          <Switch action={(e)=>handleCheckboxChange(e)} status={isChecked} custom={true} />
         </td>
 
 
