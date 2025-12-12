@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import UserItem from "../../../Components/UserDisplay/UserItem";
 import Spinner from "../../../Components/Spinner";
 import Link from "next/link";
+import Switch from "../../../Components/Switch";
 
 
 
@@ -27,10 +28,8 @@ export default function UserDisplay() {
     const userRole = session?.user?.role;
 
     const [isActive, setIsActive] = useState(true);
-
-    const handleCheckboxChange = () => {
-        setIsActive(!isActive)
-    }
+    //check loading with data in and out for jumps and fix ui
+    //check switch on new user
 
     useEffect(() => {
         fetchUsers();
@@ -49,7 +48,7 @@ export default function UserDisplay() {
             const data = await response.json();
             const userCountTotal = data.reduce((acc, user) => acc + (user.count || 0), 0);
             setUsers(data);
-            setTotalCount(userCountTotal); 
+            setTotalCount(userCountTotal);
         } catch (error) {
             console.error('Error fetching data:', error);
             //  toast.error('Error fetching users. Try again.');
@@ -105,12 +104,8 @@ export default function UserDisplay() {
 
 
         <div className=" flex flex-col w-full bg-white my-4" >
-            {status === "loading" || usersLoading && (
-                <div className="w-full min-h-screen flex flex-col justify-center align-middle items-center">
-                    <Spinner size={5} bg={'text-gray-400'} fill={'fill-white'} />
-                    <span className="text-gray-400 text-sm py-2">Loading...</span>
-                </div>
-            )}
+
+
             {userRole && userRole === 'admin' ?
                 <div className="text-gray-900 bg-white">
                     <div className='flex flex-row items-center self-start text-gray-500 mx-3'>
@@ -127,35 +122,55 @@ export default function UserDisplay() {
 
                     </div>
                     <div className="px-3 py-4 flex justify-center border-t">
-                        {//usersLoading && (<Spinner size={5} bg={'text-gray-200'} fill={'fill-gray-500'} />)}
-                        }
-                        {users && users.length > 0 ? (
-
-                            <table className="w-full text-md bg-white shadow-md rounded mb-4 ">
-                                <tbody>
-
-                                    <tr className="border-b ">
-                                        <th className="text-left py-1 px-5">Name</th>
-                                        <th className="text-left py-1 px-5">Email</th>
-                                        <th className="text-left py-1 px-5">Count</th>
-                                        <th className="text-left py-1 px-5">Role</th>
-                                        <th className="text-left py-1 px-5">Active</th>
-                                        <th></th>
-                                    </tr>
 
 
-                                    <tr className="border-b cursor-default text-sm bg-gray-100">
-                                        <td className="p-3 px-5">
+                        <div className="w-full text-md bg-white shadow-md rounded mb-4 ">
+
+
+                            <div className="flex justify-between w-full border-b ">
+                                <span className="basis-3/12 text-left py-1 px-5">Name</span>
+                                <span className="basis-3/12 text-left py-1 px-5">Email</span>
+                                <span className="basis-2/12 text-left py-1 px-5">Count</span>
+                                <span className="basis-2/12 text-left py-1 px-5">Role</span>
+                                <span className="basis-1/12 text-left py-1 px-5">Active</span>
+                                <span className="basis-1/12"></span>
+                            </div>
+                            {status == "loading" || usersLoading && 
+                                (
+
+                                    <>
+                                        <div className=" w-full border-b text-sm py-3 ">
+                                            <span className="block  basis-full h-full px-3 py-3 mx-5 bg-gray-200 rounded animate-pulse"></span>
+                                        </div>
+                                          <div className=" w-full border-b text-sm py-3 ">
+                                            <span className="block  basis-full h-full px-3 py-3 mx-5 bg-gray-200 rounded animate-pulse"></span>
+                                        </div>
+                                          <div className=" w-full border-b text-sm py-3 ">
+                                            <span className="block  basis-full h-full px-3 py-3 mx-5 bg-gray-200 rounded animate-pulse"></span>
+                                        </div>
+                                          <div className=" w-full border-b text-sm py-3 ">
+                                            <span className="block  basis-full h-full px-3 py-3 mx-5 bg-gray-200 rounded animate-pulse"></span>
+                                        </div>
+                                    </>)}
+
+
+                            {users && users.length > 0 && (
+
+                                <>
+
+
+                                    <div className="flex justify-between w-full border-b cursor-default text-sm bg-gray-100">
+                                        <span className="basis-3/12 p-3 px-5">
                                             <Link href={`/download/users/all`} >
                                                 <span className="bg-transparent">All users</span>
                                             </Link>
-                                        </td>
-                                        <td className="p-3 px-5" ></td>
-                                        <td className="p-3 px-5"><span className="">{totalCount}</span></td>
-                                        <td className="p-3 px-5"></td>
-                                        <td className="p-3 px-5"></td>
-                                        <td className="p-3 px-5"></td>
-                                    </tr>
+                                        </span>
+                                        <span className="basis-3/12 p-3 px-5" ></span>
+                                        <span className="basis-2/12 p-3 px-5"><span className="">{totalCount}</span></span>
+                                        <span className="basis-2/12 p-3 px-5"></span>
+                                        <span className="basis-2/12 p-3 px-5"></span>
+                                        <span className="basis-2/12 p-3 px-5"></span>
+                                    </div>
 
                                     {users.map((user, _index) => (
                                         <UserItem user={user} fetchUsers={fetchUsers} key={user.id} isActive={user.is_active} />
@@ -203,40 +218,7 @@ export default function UserDisplay() {
 
 
                                         <td className="p-3 px-5">
-                                            <label className='flex cursor-pointer select-none items-center'>
-                                                <div className='relative'>
-                                                    <input
-                                                        type='checkbox'
-                                                        checked={isActive}
-                                                        onChange={handleCheckboxChange}
-                                                        className='sr-only'
-                                                    />
-                                                    <div className={`block h-6 w-12 rounded-full  ${isActive ? 'bg-green-500' : 'bg-gray-400'} `}></div>
-                                                    <div className={`dot absolute left-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white transition ${isActive ? 'translate-x-6' : ''}`}>
-                                                        {isActive ? (
-                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="10px" height="10px">
-                                                                <path d="M 41.9375 8.625 C 41.273438 8.648438 40.664063 9 40.3125 9.5625 L 21.5 38.34375 L 9.3125 27.8125 C 8.789063 27.269531 8.003906 27.066406 7.28125 27.292969 C 6.5625 27.515625 6.027344 28.125 5.902344 28.867188 C 5.777344 29.613281 6.078125 30.363281 6.6875 30.8125 L 20.625 42.875 C 21.0625 43.246094 21.640625 43.410156 22.207031 43.328125 C 22.777344 43.242188 23.28125 42.917969 23.59375 42.4375 L 43.6875 11.75 C 44.117188 11.121094 44.152344 10.308594 43.78125 9.644531 C 43.410156 8.984375 42.695313 8.589844 41.9375 8.625 Z" />
-                                                            </svg>
-                                                        ) : (
-
-                                                            <svg
-                                                                className='h-5 w-5 strokeCcurrent'
-                                                                fill='none'
-                                                                viewBox='0 0 24 24'
-                                                                xmlns='http://www.w3.org/2000/svg'
-                                                            >
-                                                                <path
-                                                                    strokeLinecap='round'
-                                                                    strokeLinejoin='round'
-                                                                    strokeWidth='1'
-                                                                    d='M6 18L18 6M6 6l12 12'
-                                                                ></path>
-                                                            </svg>
-                                                        )}
-
-                                                    </div>
-                                                </div>
-                                            </label>
+                                            <Switch action={setIsActive} status={isActive} />
                                         </td>
 
 
@@ -269,16 +251,28 @@ export default function UserDisplay() {
 
                                     </tr>
 
+                                </>
+
+
+                            )}
 
 
 
-                                </tbody>
-                            </table>) : <div className=" px-44 py-12 text-gray-400">Users not found</div>}
+
+                        </div>
                     </div>
+                    {
+                        !usersLoading && users.length == 0 &&
+                        <div className="w-full flex justify-center items-center">
+                            <div className=" w-full text-center py-12 text-gray-400">Users not found</div>
+                        </div>
+                    }
+
                 </div>
                 :
-                (null)}
-        </div>
+                (null)
+            }
+        </div >
 
     )
 }

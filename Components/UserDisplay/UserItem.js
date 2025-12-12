@@ -73,18 +73,18 @@ export default function UserItem({ user, fetchUsers, isActive }) {
 
   return (
     <>
-      <tr
-        className="border-b cursor-default text-sm bg-gray-100"
+      <div
+        className="flex justify-between w-full border-b cursor-default text-sm bg-gray-100"
 
       >
-        <td className="p-3 px-5">
+        <span className="basis-3/12 p-3 px-5">
           <Link href={`/download/users/${user.id}`} >
           <span className="bg-transparent">{user.name}</span>
           </Link>
-        </td>
-        <td className="p-3 px-5 cursor-pointer" onMouseOver={() => setShowPopup(true)} onMouseOut={() => setShowPopup(false)} >
+        </span>
+        <span className="basis-3/12 p-3 px-5 cursor-pointer" onMouseOver={() => setShowPopup(true)} onMouseOut={() => setShowPopup(false)} >
 
-          <span className="bg-transparent">{user.email}</span>
+          <span className="w-full bg-transparent">{user.email}</span>
 
           {/* Popup for the date */}
           {showPopup && (
@@ -119,20 +119,20 @@ export default function UserItem({ user, fetchUsers, isActive }) {
             </div>
           )}
 
-        </td>
+        </span>
 
 
-         <td className="p-3 px-5">
+         <span className="basis-2/12 p-3 px-5">
           <span className="bg-transparent">{user.count}</span>
-        </td>
+        </span>
 
 
-        <td className="p-3 px-5">
+        <span className="basis-2/12 p-3 px-5">
           <span className="bg-transparent capitalize">{user.role}</span>
-        </td>
+        </span>
 
 
-        <td className="p-3 px-5">
+        <span className="basis-2/12 p-3 px-5">
          {/* <label className='flex cursor-pointer select-none items-center'>
             <div className='relative'>
               <input
@@ -168,13 +168,13 @@ export default function UserItem({ user, fetchUsers, isActive }) {
             </div>
           </label> */}
           <Switch action={(e)=>handleCheckboxChange(e)} status={isChecked} custom={true} />
-        </td>
+        </span>
 
 
 
 
 
-        <td className="p-3 px-5 flex justify-end">
+        <span className="p-3 px-5 flex justify-end">
           <button
             type="button"
             onClick={deleteUser}
@@ -182,8 +182,8 @@ export default function UserItem({ user, fetchUsers, isActive }) {
           >
             Delete
           </button>
-        </td>
-      </tr>
+        </span>
+      </div>
     </>
   );
 }
