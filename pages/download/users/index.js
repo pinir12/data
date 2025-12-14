@@ -5,7 +5,7 @@ import UserItem from "../../../Components/UserDisplay/UserItem";
 import Spinner from "../../../Components/Spinner";
 import Link from "next/link";
 import Switch from "../../../Components/Switch";
-
+import Head from "next/head";
 
 
 
@@ -101,7 +101,10 @@ export default function UserDisplay() {
 
 
     return (
-
+ <>
+            <Head>
+                <title>Users</title>
+            </Head>
 
         <div className=" flex flex-col w-full bg-white my-4" >
 
@@ -273,6 +276,6 @@ export default function UserDisplay() {
                 (null)
             }
         </div >
-
+</>
     )
 }
