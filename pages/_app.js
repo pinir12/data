@@ -1,4 +1,4 @@
-import '../src/app/globals.css';
+import '../app/globals.css';
 import Head from 'next/head';
 import { SessionProvider, useSession } from 'next-auth/react';
 
