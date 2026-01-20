@@ -258,7 +258,7 @@ export default async function handler(req, res) {
 
         try {
             // --- Step 1: Get metadata only ---
-            const metaCmd = `yt-dlp --cookies "${cookies_path}" -f "${ytQuality}" --skip-download --no-warnings --print "%(title)s\t%(ext)s" "${videoId}"`;
+            const metaCmd = `yt-dlp --cookies "${cookies_path}" -f "${ytQuality}" --skip-download --no-warnings --print "%(title)s\t%(ext)s" "${videoId}"  --js-runtimes 'node'`;
             console.log(`Running metadata command: ${metaCmd}`);
             const { stdout: metaStdout, stderr: metaStderr } = await execPromise(metaCmd);
             if (metaStderr) console.error('yt-dlp metadata stderr:', metaStderr);
@@ -325,7 +325,8 @@ export default async function handler(req, res) {
                 '{"percent":"%(progress._percent_str)s","down":"%(progress.downloaded_bytes)s","total":"%(progress.total_bytes)s"}',
 
                 '-o', '-',                   // Stream video to stdout
-                videoId
+                videoId,
+                '--js-runtimes', 'node'
             ]);
 
             updateProgress(0, rowId); // Initial progress 0%
