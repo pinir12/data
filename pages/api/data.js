@@ -14,6 +14,7 @@ import { error } from '../../Components/EmailTemplates/error';
 // redo whole get count, jut one db call, update count +1 if poss, select new count from and save to var
 // why not combine with check if active as well, just 1 call for all
 //download page check mobile ui, without and with data
+//enforce 11 char limot to prevent bypassing yt only, add bypass check for admin users
 
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
