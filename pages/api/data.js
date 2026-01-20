@@ -316,7 +316,7 @@ export default async function handler(req, res) {
             // --- Step 3: Spawn yt-dlp for live streaming ---
             // Progress sent to stderr, video sent to stdout
             const yt = spawn('yt-dlp', [
-                '-f', ytQuality,
+                '-f', 'mp4',
                 '--cookies', cookies_path,
 
                 '--newline',                 // flush progress lines immediately
@@ -326,7 +326,7 @@ export default async function handler(req, res) {
 
                 '-o', '-',                   // Stream video to stdout
                 videoId,
-                '--js-runtimes', 'node'
+                '--js-runtimes', '/usr/local/bin/node'
             ]);
 
             updateProgress(0, rowId); // Initial progress 0%
