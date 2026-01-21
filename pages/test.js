@@ -197,7 +197,7 @@ export default function Page() {
         try {
             // Fetch the video blob from your backend API
             const res = await fetch(
-                `/api/data?videoId=${encodeURIComponent(videoId)}&quality=${quality}&type=file&rowId=${rowId}`, {
+                `/api/data?videoId=${encodeURIComponent(videoId)}&type=file&rowId=${rowId}`, {
                 timeout: 60000, // 60 seconds
             });
 
@@ -555,20 +555,7 @@ export default function Page() {
                             </div>
                         )}
 
-                        {/* QUALITY SETTINGS (Discreet) */}
-                        {data && (
-                            <div className="mt-6 flex justify-center">
-                                <select
-                                    value={quality}
-                                    onChange={handleQualityChange}
-                                    className="text-[10px] font-bold text-slate-300 hover:text-slate-500 transition-colors uppercase bg-transparent outline-none cursor-pointer tracking-widest"
-                                >
-                                    <option value="best">Quality: Highest</option>
-                                    <option disabled value="high">Quality: 1080p</option>
-                                    <option disabled value="medium">Quality: 720p</option>
-                                </select>
-                            </div>
-                        )}
+
                     </main>
                 </div>
             </>
