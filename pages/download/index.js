@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Spinner from "../../Components/Spinner"
 import SignIn from "../../Components/SignIn";
 import { signOut, useSession } from 'next-auth/react';
@@ -73,7 +73,7 @@ export default function Page() {
     }
 
 
-    useLayoutEffect(() => {
+    useEffect(() => {
         inputRef.current?.focus();
     }, [status]);
 
