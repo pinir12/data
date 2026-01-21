@@ -52,18 +52,21 @@ export default async function handler(req, res) {
     };
     const ytQuality = qualityMap[quality] || qualityMap.best;
 
-    const updateProgress = async (progress, rowId) => {
-        // update Supabase row
+
+    async function updateProgress(percent, rowId) {
+        if (!Number.isFinite(percent)) return;
+
+        const safePercent = Math.min(Math.max(percent, 0), 100);
+
         const { error } = await supabase
             .from("download")
-            .update({
-                progress: progress,
-            })
+            .update({ progress: safePercent })
             .eq("id", rowId);
 
-        if (error) console.error("Supabase update error:", error.message);
+        if (error) {
+            console.error("Supabase update error:", error);
+        }
     }
-
 
 
     // --- Authentication Check ---
@@ -355,9 +358,25 @@ export default async function handler(req, res) {
                         continue;
                     }
 
-                    const percent = parseFloat(parsed.percent.replace("%", "")) || 0;
-                    const down = parseInt(parsed.down || 0, 10);
-                    const total = parsed.total === "NA" ? null : parseInt(parsed.total, 10);
+                    const percentRaw = parsed.percent ?? "";
+
+                    const percent = Number(
+                        percentRaw
+                            .toString()
+                            .replace("%", "")
+                            .trim()
+                    );
+
+                    if (!Number.isFinite(percent)) {
+                        return;
+                    }
+
+                    const down = Number(parsed.down);
+                    const total =
+                        parsed.total === "NA" ? null : Number(parsed.total);
+
+                    if (!Number.isFinite(down)) return;
+
 
                     // --- Ignore fake 100% from m3u8 / metadata ---
                     if (percent === 100 && !total && down < 100_000) {
@@ -427,7 +446,12 @@ export default async function handler(req, res) {
                    }
                });
                */
+
+            //remove this once confirmred working
             yt.stderr.on('data', d => console.log(d.toString()));
+
+
+
             // Pipe actual video stream to response
             yt.stdout.pipe(res);
 
