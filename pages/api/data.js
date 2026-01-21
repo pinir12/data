@@ -25,7 +25,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function handler(req, res) {
 
-    const { quality = 'best', format = 'mp4', type, rowId = '' } = req.query;
+    const { format = 'mp4', type, rowId = '' } = req.query;
 
 
     const videoId =
@@ -41,16 +41,6 @@ export default async function handler(req, res) {
     const userEmail = session.user.email;
     const userName = session.user.name;
 
-
-
-    // --- Map Quality Options to yt-dlp Formats ---
-    const qualityMap = {
-        high: 'bestvideo[height>=1080]+bestaudio/best[height>=1080]', // Prefer 1080p, then best overall
-        medium: 'bestvideo[height<=720]+bestaudio/best[height<=720]', // Prefer 720p, then best overall
-        low: 'bestvideo[height<=480]+bestaudio/best[height<=480]',   // Prefer 480p, then best overall
-        best: 'best', // Default to best available quality
-    };
-    const ytQuality = qualityMap[quality] || qualityMap.best;
 
 
     async function updateProgress(percent, rowId) {
@@ -169,6 +159,7 @@ export default async function handler(req, res) {
 
         //function called to send emails
         const sendEmails = async (videoTitle, thumbnailUrl) => {
+            const shortTitle = videoTitle.length > 20 ? `${videoTitle.slice(0, 20)}...` : videoTitle;
             const name = session.user.name;
             const firstName = name.split(" ")[0];
 
@@ -176,7 +167,7 @@ export default async function handler(req, res) {
             await resend.emails.send({
                 from: 'PiniR <mail@pinir.co.uk>',
                 to: [session.user.email],
-                subject: `Video Download Notification - ${videoTitle}`, // Use stored videoTitle
+                subject: `Video Download Notification - ${shortTitle}`, // Use stored videoTitle
                 react: videoDownloaded({ title: videoTitle, name: firstName, count: newCount, thumbnailUrl: thumbnailUrl }), // Use stored videoTitle
             });
 
@@ -261,7 +252,7 @@ export default async function handler(req, res) {
 
         try {
             // --- Step 1: Get metadata only ---
-            const metaCmd = `yt-dlp --cookies "${cookies_path}" -f "${ytQuality}" --skip-download --no-warnings --print "%(title)s\t%(ext)s" "${videoId}"  --js-runtimes 'node'`;
+            const metaCmd = `yt-dlp --cookies "${cookies_path}" --skip-download --no-warnings --print "%(title)s\t%(ext)s" "${videoId}"  --js-runtimes 'node'`;
             console.log(`Running metadata command: ${metaCmd}`);
             const { stdout: metaStdout, stderr: metaStderr } = await execPromise(metaCmd);
             if (metaStderr) console.error('yt-dlp metadata stderr:', metaStderr);
