@@ -259,7 +259,7 @@ export default async function handler(req, res) {
             let metadata;
             try {
                 const [title, ext, durationStr] = metaStdout.trim().split("\t");
-                totalDuration = parseFloat(durationStr) || 0;
+                let totalDuration = parseFloat(durationStr) || 0;
                 metadata = { title, ext, totalDuration };
             } catch (err) {
                 console.error('Failed to parse yt-dlp output:', err);
@@ -350,7 +350,7 @@ export default async function handler(req, res) {
                         const mins = parseInt(timeMatch[2], 10);
                         const secs = parseInt(timeMatch[3], 10);
                         const currentSeconds = (hours * 3600) + (mins * 60) + secs;
-                        currentPercent = (currentSeconds / totalDuration) * 100;
+                        currentPercent = (currentSeconds / metadata.totalDuration) * 100;
                     }
                 }
 
