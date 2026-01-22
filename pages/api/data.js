@@ -43,20 +43,19 @@ export default async function handler(req, res) {
 
 
 
-    async function updateProgress(percent, rowId) {
-        if (!Number.isFinite(percent)) return;
-
-        const safePercent = Math.min(Math.max(percent, 0), 100);
+    const updateProgress = async (percent, rowId) => {
+        if (!rowId || isNaN(parseInt(rowId))) {
+            // console.error("Invalid rowId passed to updateProgress");
+            return;
+        }
 
         const { error } = await supabase
-            .from("download")
-            .update({ progress: safePercent })
-            .eq("id", rowId);
+            .from('download')
+            .update({ progress: Math.floor(percent) }) // Ensure it's an integer
+            .eq('id', parseInt(rowId)); // Ensure rowId is treated as a number
 
-        if (error) {
-            console.error("Supabase update error:", error);
-        }
-    }
+        if (error) console.error("Supabase update error:", error);
+    };
 
 
     // --- Authentication Check ---
@@ -329,114 +328,148 @@ export default async function handler(req, res) {
             let lastPercentSent = 0;
             let lastSendTime = Date.now();
 
-
             yt.stderr.on("data", (chunk) => {
-                const text = chunk.toString().trim();
+                const text = chunk.toString();
 
-                // Split combined JSON objects into separate entries
-                const parts = text
-                    .replace(/}\s*{/g, "}|{|") // separate touching JSON objects
-                    .split("|")
-                    .map(s => s.trim())
-                    .filter(s => s.startsWith("{") && s.endsWith("}"));
+                // Regex to extract JSON objects from the messy stderr stream
+                const jsonMatches = text.match(/\{"percent":".*?"\}/g);
+                if (!jsonMatches) return;
 
-                for (const part of parts) {
-                    let parsed;
+                for (const match of jsonMatches) {
                     try {
-                        parsed = JSON.parse(part);
+                        const parsed = JSON.parse(match);
+                        const percent = parseFloat(parsed.percent.replace('%', '').trim());
+
+                        if (isNaN(percent)) continue;
+
+                        const now = Date.now();
+                        // Throttle updates: send if 3% change OR 5 seconds passed OR finished
+                        if (
+                            (percent - lastPercentSent >= 3) ||
+                            (now - lastSendTime >= 5000) ||
+                            (percent === 100)
+                        ) {
+                            lastPercentSent = percent;
+                            lastSendTime = now;
+                            console.log(`Progress update: ${percent}%`);
+                            updateProgress(percent);
+                        }
                     } catch (err) {
-                        console.log("JSON parse error:", err.message);
-                        continue;
-                    }
-
-                    const percentRaw = parsed.percent ?? "";
-
-                    const percent = Number(
-                        percentRaw
-                            .toString()
-                            .replace("%", "")
-                            .trim()
-                    );
-
-                    if (!Number.isFinite(percent)) {
-                        return;
-                    }
-
-                    const down = Number(parsed.down);
-                    const total =
-                        parsed.total === "NA" ? null : Number(parsed.total);
-
-                    if (!Number.isFinite(down)) return;
-
-
-                    // --- Ignore fake 100% from m3u8 / metadata ---
-                    if (percent === 100 && !total && down < 100_000) {
-                        continue;
-                    };
-
-                    // --- RATE LIMITING ---
-                    const now = Date.now();
-                    const percentChange = percent - lastPercentSent;
-                    const timePassed = now - lastSendTime;
-
-                    if (
-                        percentChange >= 3 ||
-                        timePassed >= 5000 ||
-                        (percent === 100 && total)
-                    ) {
-                        lastPercentSent = percent;
-                        lastSendTime = now;
-                        updateProgress(percent, rowId); // only number sent
+                        // Ignore partial/malformed chunks
                     }
                 }
             });
 
 
-            /*   yt.stderr.on("data", (chunk) => {
-                   const text = chunk.toString().trim();
-                   const parts = text
-                       .replace(/}\s*{/g, "}|{|")
-                       .split("|")
-                       .map(s => s.trim())
-                       .filter(s => s.startsWith("{") && s.endsWith("}"));
-   
-                   for (const part of parts) {
-                       let p;
-                       try {
-                           p = JSON.parse(part);
-                       } catch (err) {
-                           continue;
-                       }
-   
-                       const percent = parseFloat(p.percent.replace("%", "")) || 0;
-                       const down = parseInt(p.down || 0, 10);
-                       const total = p.total === "NA" ? null : parseInt(p.total, 10);
-   
-                       // --- Ignore fake 100% from m3u8 / metadata ---
-                       if (percent === 100 && !total && down < 100_000) continue;
-   
-                       const now = Date.now();
-                       const percentChange = percent - lastPercentSent;
-                       const timePassed = now - lastSendTime;
-   
-                       // --- Update only if:
-                       // 1) >=3% change
-                       // 2) >=10s passed
-                       // 3) percent is 100 and we have real total bytes
-                       if (
-                           percentChange >= 3 ||
-                           timePassed >= 10000 ||
-                           (percent === 100 && total)
-                       ) {
-                           lastPercentSent = percent;
-                           lastSendTime = now;
-   
-                           console.log(`Progress: ${percent}%`);
-                           updateProgress(percent, rowId);
-                       }
-                   }
-               });
-               */
+            /*
+            
+                        yt.stderr.on("data", (chunk) => {
+                            const text = chunk.toString().trim();
+            
+                            // Split combined JSON objects into separate entries
+                            const parts = text
+                                .replace(/}\s*{/g, "}|{|") // separate touching JSON objects
+                                .split("|")
+                                .map(s => s.trim())
+                                .filter(s => s.startsWith("{") && s.endsWith("}"));
+            
+                            for (const part of parts) {
+                                let parsed;
+                                try {
+                                    parsed = JSON.parse(part);
+                                } catch (err) {
+                                    console.log("JSON parse error:", err.message);
+                                    continue;
+                                }
+            
+                                const percentRaw = parsed.percent ?? "";
+            
+                                const percent = Number(
+                                    percentRaw
+                                        .toString()
+                                        .replace("%", "")
+                                        .trim()
+                                );
+            
+                                if (!Number.isFinite(percent)) {
+                                    return;
+                                }
+            
+                                const down = Number(parsed.down);
+                                const total =
+                                    parsed.total === "NA" ? null : Number(parsed.total);
+            
+                                if (!Number.isFinite(down)) return;
+            
+            
+                                // --- Ignore fake 100% from m3u8 / metadata ---
+                                if (percent === 100 && !total && down < 100_000) {
+                                    continue;
+                                };
+            
+                                // --- RATE LIMITING ---
+                                const now = Date.now();
+                                const percentChange = percent - lastPercentSent;
+                                const timePassed = now - lastSendTime;
+            
+                                if (
+                                    percentChange >= 3 ||
+                                    timePassed >= 5000 ||
+                                    (percent === 100 && total)
+                                ) {
+                                    lastPercentSent = percent;
+                                    lastSendTime = now;
+                                    updateProgress(percent, rowId); // only number sent
+                                }
+                            }
+                        });
+            
+            
+                        /*   yt.stderr.on("data", (chunk) => {
+                               const text = chunk.toString().trim();
+                               const parts = text
+                                   .replace(/}\s*{/g, "}|{|")
+                                   .split("|")
+                                   .map(s => s.trim())
+                                   .filter(s => s.startsWith("{") && s.endsWith("}"));
+               
+                               for (const part of parts) {
+                                   let p;
+                                   try {
+                                       p = JSON.parse(part);
+                                   } catch (err) {
+                                       continue;
+                                   }
+               
+                                   const percent = parseFloat(p.percent.replace("%", "")) || 0;
+                                   const down = parseInt(p.down || 0, 10);
+                                   const total = p.total === "NA" ? null : parseInt(p.total, 10);
+               
+                                   // --- Ignore fake 100% from m3u8 / metadata ---
+                                   if (percent === 100 && !total && down < 100_000) continue;
+               
+                                   const now = Date.now();
+                                   const percentChange = percent - lastPercentSent;
+                                   const timePassed = now - lastSendTime;
+               
+                                   // --- Update only if:
+                                   // 1) >=3% change
+                                   // 2) >=10s passed
+                                   // 3) percent is 100 and we have real total bytes
+                                   if (
+                                       percentChange >= 3 ||
+                                       timePassed >= 10000 ||
+                                       (percent === 100 && total)
+                                   ) {
+                                       lastPercentSent = percent;
+                                       lastSendTime = now;
+               
+                                       console.log(`Progress: ${percent}%`);
+                                       updateProgress(percent, rowId);
+                                   }
+                               }
+                           });
+                           */
 
             //remove this once confirmred working
             yt.stderr.on('data', d => console.log(d.toString()));

@@ -521,12 +521,14 @@ export default function Page() {
                                         </CopyToClipboard>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3 mb-4">
+                                    <div className="flex flex-col gap-3 mb-4">
                                         <a target="_blank" href={data.url} className="w-full">
                                             <button className="w-full h-11 border border-slate-200 text-slate-600 text-[11px] font-bold uppercase rounded-xl hover:bg-slate-50 transition-colors">
-                                                Open Link
+                                                Save Video
                                             </button>
                                         </a>
+                                        <span className="text-[10px] text-slate-400">Right click the button and select save as. You can copy the file name above.</span>
+                                        <span className="">If you are having trouble this way, try the alternative download method below</span>
                                         <button
                                             onClick={() => startDownload(id)}
                                             disabled={downloadButtonLoading}
