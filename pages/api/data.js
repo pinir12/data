@@ -259,7 +259,7 @@ export default async function handler(req, res) {
             let metadata;
             try {
                 const [title, ext, durationStr] = metaStdout.trim().split("\t");
-                const totalDuration = parseFloat(durationStr) || 0;
+                totalDuration = parseFloat(durationStr) || 0;
                 metadata = { title, ext, totalDuration };
             } catch (err) {
                 console.error('Failed to parse yt-dlp output:', err);
@@ -345,7 +345,7 @@ export default async function handler(req, res) {
                 // --- 2. Fallback to Time-based (Strategy B) if JSON failed/is 0 ---
                 if (currentPercent <= 0) {
                     const timeMatch = text.match(/time=(\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
-                    if (timeMatch && totalDuration > 0) {
+                    if (timeMatch && metadata.totalDuration > 0) {
                         const hours = parseInt(timeMatch[1], 10);
                         const mins = parseInt(timeMatch[2], 10);
                         const secs = parseInt(timeMatch[3], 10);
@@ -494,7 +494,7 @@ export default async function handler(req, res) {
                            */
 
             //remove this once confirmred working
-           // yt.stderr.on('data', d => console.log(d.toString()));
+            // yt.stderr.on('data', d => console.log(d.toString()));
 
 
 
