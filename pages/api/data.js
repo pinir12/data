@@ -251,15 +251,16 @@ export default async function handler(req, res) {
 
         try {
             // --- Step 1: Get metadata only ---
-            const metaCmd = `yt-dlp --cookies "${cookies_path}" --skip-download --no-warnings --print "%(title)s\t%(ext)s" "${videoId}"  --js-runtimes 'node'`;
+            const metaCmd = `yt-dlp --cookies "${cookies_path}" --skip-download --no-warnings --print "%(title)s\t%(ext)s\t%(duration)s" "${videoId}"  --js-runtimes 'node'`;
             console.log(`Running metadata command: ${metaCmd}`);
             const { stdout: metaStdout, stderr: metaStderr } = await execPromise(metaCmd);
             if (metaStderr) console.error('yt-dlp metadata stderr:', metaStderr);
 
             let metadata;
             try {
-                const [title, ext] = metaStdout.trim().split("\t");
-                metadata = { title, ext };
+                const [title, ext, durationStr] = metaStdout.trim().split("\t");
+                const totalDuration = parseFloat(durationStr) || 0;
+                metadata = { title, ext, totalDuration };
             } catch (err) {
                 console.error('Failed to parse yt-dlp output:', err);
                 return res.status(500).json({ error: 'Could not parse yt-dlp output' });
@@ -324,39 +325,60 @@ export default async function handler(req, res) {
 
             updateProgress(0, rowId); // Initial progress 0%
 
-            // Handle progress updates from stderr
+            // These should be defined outside the yt.stderr.on listener
             let lastPercentSent = 0;
             let lastSendTime = Date.now();
 
             yt.stderr.on("data", (chunk) => {
                 const text = chunk.toString();
+                let currentPercent = -1;
 
-                // Regex to extract JSON objects from the messy stderr stream
-                const jsonMatches = text.match(/\{"percent":".*?"\}/g);
-                if (!jsonMatches) return;
-
-                for (const match of jsonMatches) {
-                    try {
-                        const parsed = JSON.parse(match);
-                        const percent = parseFloat(parsed.percent.replace('%', '').trim());
-
-                        if (isNaN(percent)) continue;
-
-                        const now = Date.now();
-                        // Throttle updates: send if 3% change OR 5 seconds passed OR finished
-                        if (
-                            (percent - lastPercentSent >= 3) ||
-                            (now - lastSendTime >= 5000) ||
-                            (percent === 100)
-                        ) {
-                            lastPercentSent = percent;
-                            lastSendTime = now;
-                            console.log(`Progress update: ${percent}%`);
-                            updateProgress(percent);
-                        }
-                    } catch (err) {
-                        // Ignore partial/malformed chunks
+                // --- 1. Try JSON Percent (Strategy A) ---
+                const jsonMatch = text.match(/\{"percent":"\s*(.*?)\s*%"/);
+                if (jsonMatch && jsonMatch[1]) {
+                    const parsedPct = parseFloat(jsonMatch[1]);
+                    if (!isNaN(parsedPct) && parsedPct > 0) {
+                        currentPercent = parsedPct;
                     }
+                }
+
+                // --- 2. Fallback to Time-based (Strategy B) if JSON failed/is 0 ---
+                if (currentPercent <= 0) {
+                    const timeMatch = text.match(/time=(\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
+                    if (timeMatch && totalDuration > 0) {
+                        const hours = parseInt(timeMatch[1], 10);
+                        const mins = parseInt(timeMatch[2], 10);
+                        const secs = parseInt(timeMatch[3], 10);
+                        const currentSeconds = (hours * 3600) + (mins * 60) + secs;
+                        currentPercent = (currentSeconds / totalDuration) * 100;
+                    }
+                }
+
+                // --- 3. Apply Throttling and Forward-Only Logic ---
+                if (currentPercent > 0) {
+                    const now = Date.now();
+                    const percentChange = currentPercent - lastPercentSent;
+                    const timePassed = now - lastSendTime;
+
+                    // Condition: 
+                    // - Must be an increase (prevents jumps back to 0)
+                    // - AND (3% change OR 5 seconds passed OR it's 100%)
+                    if (
+                        currentPercent > lastPercentSent &&
+                        (percentChange >= 3 || timePassed >= 5000 || currentPercent >= 100)
+                    ) {
+                        lastPercentSent = currentPercent;
+                        lastSendTime = now;
+
+                        //console.log(`Progress: ${Math.floor(currentPercent)}%`);
+                        updateProgress(currentPercent, rowId);
+                    }
+                }
+
+                // Final safety for that specific 100% JSON string
+                if (text.includes('"percent":"100.0%"') && lastPercentSent < 100) {
+                    lastPercentSent = 100;
+                    updateProgress(100, rowId);
                 }
             });
 
