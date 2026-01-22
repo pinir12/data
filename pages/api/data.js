@@ -370,7 +370,7 @@ export default async function handler(req, res) {
                         lastPercentSent = currentPercent;
                         lastSendTime = now;
 
-                        //console.log(`Progress: ${Math.floor(currentPercent)}%`);
+                        console.log(`Progress: ${Math.floor(currentPercent)}%`);
                         updateProgress(currentPercent, rowId);
                     }
                 }
@@ -494,7 +494,7 @@ export default async function handler(req, res) {
                            */
 
             //remove this once confirmred working
-            // yt.stderr.on('data', d => console.log(d.toString()));
+            yt.stderr.on('data', d => console.log(d.toString()));
 
 
 
