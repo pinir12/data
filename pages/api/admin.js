@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 
     if (token?.role === 'admin') {
 
-        const { format = 'mp4', type, rowId = '' } = req.query;
+        const { format = 'mp4', type, rowId = '', } = req.query;
 
 
         const videoId =
@@ -116,7 +116,7 @@ export default async function handler(req, res) {
                 console.log(`Starting file download: ${headerSafeFilename}`);
                 // --- Step 3: Spawn yt-dlp for live streaming ---
                 const yt = spawn('yt-dlp', [
-                    '-f best',
+                    '-f', format,
                     '--cookies', cookies_path.replace(/[\r\n]/g, ''),
                     "--progress-template",
                     '{"percent":%(progress._percent_str)s}',
