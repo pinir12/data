@@ -200,7 +200,7 @@ export default async function handler(req, res) {
 
         try {
             //current command to get video direct link with node js runtime
-            const combinedCmd = `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s" -f 'best[protocol="https"]'   "${videoId}" --js-runtimes 'node'`;
+            const combinedCmd = `yt-dlp --cookies "${cookies_path}" --remote-components 'ejs:github'  --print "%(title)s||%(url)s||%(thumbnail)s" -f 'best[protocol="https"]'   "${videoId}" --js-runtimes 'node'`;
 
             //--updated command to get m3u8 when mp4 etc not avilable-- const combinedCmd = `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s"  -f 'best'   "${videoId}"`;
             //--original command to get video file directly-- const combinedCmd =           `yt-dlp --cookies "${cookies_path}"  --print "%(title)s||%(url)s||%(thumbnail)s"  -f 'best[protocol="https"]'   "${videoId}"`;
@@ -251,7 +251,7 @@ export default async function handler(req, res) {
 
         try {
             // --- Step 1: Get metadata only ---
-            const metaCmd = `yt-dlp --cookies "${cookies_path}" --skip-download --no-warnings --print "%(title)s\t%(ext)s\t%(duration)s" "${videoId}"  --js-runtimes 'node'`;
+            const metaCmd = `yt-dlp --cookies "${cookies_path}" --remote-components 'ejs:github' --skip-download --no-warnings --print "%(title)s\t%(ext)s\t%(duration)s" "${videoId}"  --js-runtimes 'node'`;
             console.log(`Running metadata command: ${metaCmd}`);
             const { stdout: metaStdout, stderr: metaStderr } = await execPromise(metaCmd);
             if (metaStderr) console.error('yt-dlp metadata stderr:', metaStderr);
@@ -312,7 +312,7 @@ export default async function handler(req, res) {
             const yt = spawn('yt-dlp', [
                 '-f', '22/18',
                 '--cookies', cookies_path,
-
+                '--remote-components', 'ejs:github',
                 '--newline',                 // flush progress lines immediately
                 '--progress',                // force progress output
                 '--progress-template',
